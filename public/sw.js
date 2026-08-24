@@ -1,55 +1,163 @@
-// Service Worker for Push Notifications & Background Alerts
+// Service Worker for TaskPan PWA - Offline Support & Push Notifications
+const CACHE_NAME = 'taskpan-pwa-v1';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/icon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png',
+  '/favicon.png'
+];
+
+// Install Event: Cache Core Assets
 self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('Some assets could not be pre-cached:', err);
+      });
+    })
+  );
   self.skipWaiting();
 });
 
+// Activate Event: Clean up old caches
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
-// Listen for push events
-self.addEventListener('push', (event) => {
-  if (!event.data) return;
+// Fetch Event: Network-first with cache fallback for navigation, Cache-first for static icons
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
 
-  try {
-    const data = event.data.json();
-    const title = data.title || 'Pengingat Tugas & Keuangan';
-    const options = {
-      body: data.message || data.body || 'Anda memiliki pengingat baru.',
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
-      vibrate: [200, 100, 200],
-      tag: data.tag || 'productivity-reminder',
-      data: {
-        url: data.url || '/',
-      },
-    };
+  // Skip non-GET and API/TTS requests
+  if (request.method !== 'GET' || url.pathname.startsWith('/api/')) {
+    return;
+  }
 
-    event.waitUntil(self.registration.showNotification(title, options));
-  } catch (err) {
-    const text = event.data.text();
-    event.waitUntil(
-      self.registration.showNotification('Pengingat Produktivitas', {
-        body: text,
-        icon: '/favicon.ico',
+  // Static images and fonts cache-first
+  if (
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.svg') ||
+    url.pathname.endsWith('.ico') ||
+    url.hostname.includes('fonts.googleapis.com') ||
+    url.hostname.includes('fonts.gstatic.com')
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        return (
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const resClone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, resClone));
+            }
+            return response;
+          })
+        );
       })
     );
+    return;
+  }
+
+  // Navigation requests: Network first, fallback to cache
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return caches.match('/index.html') || caches.match('/');
+      })
+    );
+    return;
   }
 });
 
-// Handle notification click
+// Push Notifications Event (Web Push Protocol)
+self.addEventListener('push', (event) => {
+  let data = {
+    title: '⏰ Pengingat TaskPan',
+    body: 'Anda memiliki tugas atau peringatan anggaran baru!',
+    tag: 'taskpan-general',
+    url: '/',
+  };
+
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body || data.message || 'Buka TaskPan untuk melihat detail.',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    image: data.image || undefined,
+    vibrate: [300, 100, 300, 100, 400],
+    tag: data.tag || `taskpan-${Date.now()}`,
+    renotify: true,
+    requireInteraction: true,
+    data: {
+      url: data.url || '/',
+      timestamp: Date.now(),
+    },
+    actions: [
+      { action: 'open', title: '📱 Buka Aplikasi' },
+      { action: 'dismiss', title: 'Tutup' }
+    ]
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title || 'TaskPan Reminder', options));
+});
+
+// Notification Click Event: Focus existing window or open new one
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
+  if (event.action === 'dismiss') {
+    return;
+  }
+
+  const targetUrl = event.notification.data?.url || '/';
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url && 'focus' in client) {
-          return client.focus();
+        if ('focus' in client) {
+          if (client.url.includes(self.location.origin)) {
+            return client.focus();
+          }
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(event.notification.data?.url || '/');
+        return self.clients.openWindow(targetUrl);
       }
     })
   );
+});
+
+// Listen for message from main thread (for direct SW notification triggering)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    self.registration.showNotification(title || 'TaskPan', {
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [200, 100, 200],
+      ...options,
+    });
+  }
 });

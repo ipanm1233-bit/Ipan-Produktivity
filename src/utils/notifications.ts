@@ -25,38 +25,62 @@ export function getNotificationPermissionState(): NotificationPermission {
   return Notification.permission;
 }
 
-// Show browser native notification
+// Show browser & mobile native notification with vibration
 export function showBrowserNotification(title: string, options?: NotificationOptions) {
   if (!('Notification' in window) || Notification.permission !== 'granted') {
     return;
   }
 
-  // If service worker is ready, trigger through service worker
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.showNotification(title, {
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        ...options,
-      });
-    }).catch(() => {
-      try {
-        new Notification(title, { icon: '/favicon.ico', ...options });
-      } catch (e) {
-        console.warn('Notification error:', e);
-      }
-    });
-  } else {
+  // Trigger device hardware vibration if supported (Android / Mobile)
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      new Notification(title, {
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        ...options,
-      });
+      navigator.vibrate([200, 100, 200, 100, 300]);
     } catch (e) {
-      console.warn('Native notification display error:', e);
+      // Ignore vibration errors
     }
   }
+
+  const enhancedOptions: NotificationOptions & { vibrate?: number[] } = {
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [200, 100, 200, 100, 300],
+    ...options,
+  };
+
+  // If service worker is ready, trigger through service worker (best for mobile devices)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready
+      .then((reg) => {
+        reg.showNotification(title, enhancedOptions as any);
+      })
+      .catch(() => {
+        try {
+          new Notification(title, enhancedOptions);
+        } catch (e) {
+          console.warn('Native notification display error:', e);
+        }
+      });
+  } else {
+    try {
+      new Notification(title, enhancedOptions);
+    } catch (e) {
+      console.warn('Native notification fallback error:', e);
+    }
+  }
+}
+
+// Helper to trigger an immediate test notification for mobile users
+export async function triggerTestMobileNotification(): Promise<boolean> {
+  const perm = await requestNotificationPermission();
+  if (perm === 'granted') {
+    playChime('success');
+    showBrowserNotification('🎉 Notifikasi TaskPan Aktif!', {
+      body: 'Hebat! Perangkat Anda kini siap menerima pemberitahuan tenggat tugas dan peringatan anggaran secara otomatis.',
+      tag: 'taskpan-welcome-test',
+    });
+    return true;
+  }
+  return false;
 }
 
 // Periodic check for upcoming task deadlines and budget alerts

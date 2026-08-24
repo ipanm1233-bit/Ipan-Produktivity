@@ -11,7 +11,8 @@ import {
   Search,
   Menu,
   Sparkles,
-  Layers
+  Layers,
+  Smartphone
 } from 'lucide-react';
 import { VoiceSettings } from '../types';
 
@@ -33,6 +34,7 @@ interface NavbarProps {
   openAddTransaction: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  openInstallModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -52,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   openAddTransaction,
   searchQuery,
   setSearchQuery,
+  openInstallModal,
 }) => {
   const getTabTitle = () => {
     switch (activeTab) {
@@ -84,6 +87,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Action buttons (Shown on Mobile in top row for quick access) */}
           <div className="flex md:hidden items-center space-x-2 overflow-visible flex-shrink-0">
+            {/* Install PWA / Mobile App Button */}
+            {openInstallModal && (
+              <button
+                id="mobile-install-app-btn"
+                onClick={openInstallModal}
+                title="Install ke Layar Utama HP & Notifikasi"
+                className="clay-button w-9 h-9 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 active:scale-95 transition"
+              >
+                <Smartphone className="w-4 h-4" />
+              </button>
+            )}
+
             {/* Quick Add Task */}
             <button
               onClick={openAddTask}
@@ -167,6 +182,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Desktop/Tablet Icon Actions */}
           <div className="hidden md:flex items-center space-x-2 flex-shrink-0 overflow-visible">
+            {/* Install PWA / Mobile App Button */}
+            {openInstallModal && (
+              <button
+                id="install-app-btn"
+                onClick={openInstallModal}
+                title="Aplikasi Layar Utama (PWA) & Notifikasi HP"
+                className="clay-button h-10 px-3 rounded-2xl text-xs font-bold flex items-center space-x-1.5 text-orange-600 dark:text-orange-400 flex-shrink-0 active:scale-95 transition"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span className="text-[11px] font-extrabold hidden lg:inline">App HP</span>
+              </button>
+            )}
+
             {/* Voice Reminder Quick Button */}
             <button
               id="voice-toggle-btn"

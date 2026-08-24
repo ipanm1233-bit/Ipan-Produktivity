@@ -8,10 +8,11 @@ import {
   Volume2, 
   Radio, 
   Crown, 
-  Sparkles,
-  Settings,
-  Flame,
-  Award
+  Sparkles, 
+  Settings, 
+  Flame, 
+  Award,
+  Smartphone
 } from 'lucide-react';
 import { VoiceSettings } from '../../types';
 import avatarImg from '../../assets/images/male_avatar_3d_1787560743768.jpg';
@@ -26,6 +27,7 @@ interface ClaySidebarProps {
   openVoiceModal: () => void;
   darkMode: boolean;
   onStartFocusBrief?: () => void;
+  openInstallModal?: () => void;
 }
 
 export const ClaySidebar: React.FC<ClaySidebarProps> = ({
@@ -38,6 +40,7 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
   openVoiceModal,
   darkMode,
   onStartFocusBrief,
+  openInstallModal,
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -137,6 +140,22 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
             <Radio className={`w-4 h-4 ${isSyncing ? 'animate-spin text-orange-500' : 'text-emerald-500'}`} />
             <span className="truncate">Sync Room ({syncRoomId})</span>
           </button>
+
+          {/* Quick Trigger for Install PWA & Mobile Notifications */}
+          {openInstallModal && (
+            <button
+              id="sidebar-install-pwa-btn"
+              onClick={openInstallModal}
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all ${
+                darkMode
+                  ? 'text-orange-400 hover:text-white hover:bg-orange-500/10'
+                  : 'text-orange-700 hover:text-orange-900 hover:bg-orange-100/60'
+              }`}
+            >
+              <Smartphone className="w-4 h-4 text-orange-500" />
+              <span className="truncate">Install App ke HP</span>
+            </button>
+          )}
         </nav>
 
       </div>

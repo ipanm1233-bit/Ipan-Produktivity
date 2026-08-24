@@ -25,6 +25,7 @@ interface NotificationDrawerProps {
   onClearAll: () => void;
   onSelectNotification?: (item: NotificationItem) => void;
   darkMode: boolean;
+  openInstallModal?: () => void;
 }
 
 export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
@@ -34,6 +35,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   onMarkAllRead,
   onClearAll,
   darkMode,
+  openInstallModal,
 }) => {
   const [filter, setFilter] = useState<'all' | 'unread' | 'alerts'>('all');
   const [showPermissionBanner, setShowPermissionBanner] = useState(true);
@@ -250,12 +252,23 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
           )}
         </div>
 
-        {/* Compact Footer */}
-        <div className="px-4 py-2 sm:py-2.5 border-t border-[#E8DACB] dark:border-white/10 text-center flex-shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
-          <p className="text-[10px] text-[#8A796E] dark:text-[#BDB0A4] font-medium flex items-center justify-center space-x-1">
-            <Sparkles className="w-3 h-3 text-orange-500 inline" />
-            <span>Pengingat & pemantau otomatis aktif secara real-time</span>
+        {/* Compact Footer with PWA & Test Link */}
+        <div className="px-3.5 py-2 sm:py-2.5 border-t border-[#E8DACB] dark:border-white/10 flex items-center justify-between text-[10px] sm:text-[10.5px] flex-shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
+          <p className="text-[#8A796E] dark:text-[#BDB0A4] font-medium flex items-center space-x-1 truncate">
+            <Sparkles className="w-3 h-3 text-orange-500 inline flex-shrink-0" />
+            <span className="truncate">Pengingat aktif real-time</span>
           </p>
+          {openInstallModal && (
+            <button
+              onClick={() => {
+                onClose();
+                openInstallModal();
+              }}
+              className="text-orange-600 dark:text-orange-400 hover:underline font-extrabold flex-shrink-0 ml-2"
+            >
+              📱 Install App ke HP
+            </button>
+          )}
         </div>
 
       </div>

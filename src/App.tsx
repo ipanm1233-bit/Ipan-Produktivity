@@ -35,6 +35,7 @@ import { CalendarSchedule } from './components/CalendarView/CalendarSchedule';
 import { VoiceSettingsModal } from './components/VoiceSettings/VoiceSettingsModal';
 import { SyncModal } from './components/SyncModal/SyncModal';
 import { NotificationDrawer } from './components/Notifications/NotificationDrawer';
+import { InstallPwaModal } from './components/InstallModal/InstallPwaModal';
 import { FluidBottomNav } from './components/Navigation/FluidBottomNav';
 import { 
   Home, 
@@ -65,6 +66,7 @@ export default function App() {
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -400,6 +402,7 @@ export default function App() {
             isSyncing={isSyncing}
             openSyncModal={() => setIsSyncModalOpen(true)}
             openVoiceModal={() => setIsVoiceModalOpen(true)}
+            openInstallModal={() => setIsInstallModalOpen(true)}
             darkMode={darkMode}
             onStartFocusBrief={handleStartFocusBrief}
           />
@@ -420,6 +423,7 @@ export default function App() {
             openSyncModal={() => setIsSyncModalOpen(true)}
             openVoiceModal={() => setIsVoiceModalOpen(true)}
             openNotificationDrawer={() => setIsNotificationDrawerOpen(true)}
+            openInstallModal={() => setIsInstallModalOpen(true)}
             unreadNotifsCount={unreadNotifsCount}
             voiceSettings={appData.voiceSettings}
             setVoiceSettings={(updater) => {
@@ -617,6 +621,13 @@ export default function App() {
         notifications={appData.notifications}
         onMarkAllRead={handleMarkAllNotifsRead}
         onClearAll={handleClearAllNotifs}
+        openInstallModal={() => setIsInstallModalOpen(true)}
+        darkMode={darkMode}
+      />
+
+      <InstallPwaModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
         darkMode={darkMode}
       />
 
