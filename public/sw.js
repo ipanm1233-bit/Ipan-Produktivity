@@ -1,5 +1,5 @@
 // Service Worker for TaskPan PWA - Offline Support & Push Notifications
-const CACHE_NAME = 'taskpan-pwa-v2';
+const CACHE_NAME = 'taskpan-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -8,6 +8,10 @@ const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/apple-touch-icon.png',
+  '/apple-touch-icon-precomposed.png',
+  '/apple-touch-icon-120x120.png',
+  '/apple-touch-icon-152x152.png',
+  '/apple-touch-icon-167x167.png',
   '/favicon.png'
 ];
 
