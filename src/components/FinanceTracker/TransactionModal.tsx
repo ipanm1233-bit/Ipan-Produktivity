@@ -113,24 +113,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-lg clay-modal overflow-hidden transition-all my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-lg clay-modal flex flex-col max-h-[88vh] sm:max-h-[85vh] rounded-[24px] sm:rounded-[32px] overflow-hidden my-auto shadow-2xl transition-all">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-inner ${
+            <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center border shadow-inner flex-shrink-0 ${
               type === 'expense'
                 ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'
                 : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
             }`}>
-              {type === 'expense' ? <TrendingDown className="w-6 h-6" /> : <TrendingUp className="w-6 h-6" />}
+              {type === 'expense' ? <TrendingDown className="w-5 h-5 sm:w-6 sm:h-6" /> : <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />}
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
+              <h2 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
                 {txToEdit ? 'Ubah Transaksi' : 'Catat Transaksi Keuangan'}
               </h2>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium">
+              <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium line-clamp-1">
                 Catat pengeluaran atau pemasukan untuk pantau anggaran
               </p>
             </div>
@@ -138,14 +138,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <button
             id="close-tx-modal-btn"
             onClick={onClose}
-            className="clay-button p-2.5 rounded-2xl text-[#8A796E] dark:text-[#D4C7BC]"
+            className="clay-button p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-[#8A796E] dark:text-[#D4C7BC] flex-shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
           
           {/* Income vs Expense Toggle */}
           <div className="grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-[#E8DACB] dark:bg-[#1C1816] shadow-inner">

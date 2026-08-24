@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   X, 
   Bell, 
@@ -10,7 +10,8 @@ import {
   Flame, 
   Radio, 
   CheckCircle2,
-  Volume2
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { NotificationItem } from '../../types';
 import { requestNotificationPermission, getNotificationPermissionState, showBrowserNotification } from '../../utils/notifications';
@@ -34,9 +35,20 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   onClearAll,
   darkMode,
 }) => {
+  const [filter, setFilter] = useState<'all' | 'unread' | 'alerts'>('all');
+  const [showPermissionBanner, setShowPermissionBanner] = useState(true);
+
   if (!isOpen) return null;
 
   const permissionState = getNotificationPermissionState();
+  const unreadCount = notifications.filter(n => !n.read).length;
+  const alertCount = notifications.filter(n => n.type.includes('warning') || n.type.includes('exceeded') || n.type.includes('deadline')).length;
+
+  const filteredNotifications = notifications.filter((n) => {
+    if (filter === 'unread') return !n.read;
+    if (filter === 'alerts') return n.type.includes('warning') || n.type.includes('exceeded') || n.type.includes('deadline');
+    return true;
+  });
 
   const handleRequestPermission = async () => {
     const perm = await requestNotificationPermission();
@@ -45,144 +57,204 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
       showBrowserNotification('🔔 Notifikasi Browser Aktif!', {
         body: 'Anda sekarang akan menerima pemberitahuan tenggat waktu dan peringatan anggaran secara tepat waktu.',
       });
+      setShowPermissionBanner(false);
     }
   };
 
   const getIcon = (type: NotificationItem['type']) => {
     switch (type) {
       case 'task_deadline':
-        return <Clock className="w-4 h-4 text-blue-400" />;
+        return <Clock className="w-3.5 h-3.5 text-blue-500" />;
       case 'budget_exceeded':
-        return <AlertTriangle className="w-4 h-4 text-rose-500" />;
+        return <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />;
       case 'budget_warning':
-        return <AlertTriangle className="w-4 h-4 text-amber-400" />;
+        return <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />;
       case 'streak_achievement':
-        return <Flame className="w-4 h-4 text-amber-400" />;
+        return <Flame className="w-3.5 h-3.5 text-orange-500" />;
       case 'sync_update':
       default:
-        return <Radio className="w-4 h-4 text-emerald-400" />;
+        return <Radio className="w-3.5 h-3.5 text-emerald-500" />;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
-      <div className="w-full max-w-md h-full flex flex-col clay-card rounded-none rounded-l-3xl shadow-2xl transition-transform duration-300 overflow-hidden">
-        
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
-              <Bell className="w-6 h-6" />
+    <div 
+      className="fixed inset-0 z-50 flex items-end sm:items-stretch justify-center sm:justify-end bg-black/60 backdrop-blur-sm transition-opacity p-0 sm:p-0"
+      onClick={onClose}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="w-full sm:max-w-md max-h-[80vh] sm:max-h-full sm:h-full flex flex-col clay-card rounded-t-[28px] sm:rounded-t-none sm:rounded-l-3xl shadow-2xl transition-all duration-300 overflow-hidden border-t sm:border-t-0 sm:border-l border-white/40 dark:border-white/10"
+      >
+        {/* Mobile Pull Bar Indicator */}
+        <div className="w-12 h-1 rounded-full bg-[#8A796E]/30 dark:bg-white/20 mx-auto mt-2.5 mb-1 sm:hidden flex-shrink-0" />
+
+        {/* Compact Header */}
+        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
+              <Bell className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">Pusat Notifikasi Push</h2>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium">
-                Pengingat tenggat & peringatan limit anggaran
+              <div className="flex items-center space-x-2">
+                <h2 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
+                  Notifikasi
+                </h2>
+                {unreadCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-black">
+                    {unreadCount} baru
+                  </span>
+                )}
+              </div>
+              <p className="text-[10.5px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium line-clamp-1">
+                Pengingat tugas & anggaran kas
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="clay-button p-2 rounded-2xl text-[#8A796E] dark:text-[#D4C7BC]"
+            className="clay-button p-1.5 sm:p-2 rounded-xl text-[#8A796E] dark:text-[#D4C7BC] flex-shrink-0 hover:text-[#3E2F26] dark:hover:text-white"
+            title="Tutup"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Push Permission Prompt if not granted */}
-        {permissionState !== 'granted' && (
-          <div className="p-4 m-4 rounded-2xl clay-card-sm border-2 border-orange-400/40 flex items-start space-x-3">
-            <BellRing className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 text-xs">
-              <h4 className="font-extrabold text-orange-600 dark:text-orange-400">
-                Aktifkan Notifikasi Desktop
-              </h4>
-              <p className="text-[#5A453A] dark:text-[#D4C7BC] mt-1 leading-relaxed font-medium">
-                Dapatkan notifikasi push langsung saat tenggat waktu mendekat atau anggaran melebihi batas.
-              </p>
+        {/* Compact Push Permission Banner */}
+        {permissionState !== 'granted' && showPermissionBanner && (
+          <div className="mx-3.5 mt-2.5 p-2.5 rounded-xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-transparent border border-orange-300/60 dark:border-orange-500/30 flex items-center justify-between gap-2 text-xs flex-shrink-0">
+            <div className="flex items-center space-x-2 min-w-0">
+              <BellRing className="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+              <span className="text-[11px] font-bold text-[#4A3B32] dark:text-[#E8DACB] truncate">
+                Izinkan pemberitahuan pop-up browser
+              </span>
+            </div>
+            <div className="flex items-center space-x-1.5 flex-shrink-0">
               <button
                 onClick={handleRequestPermission}
-                className="mt-3 px-4 py-2 clay-button-primary font-extrabold rounded-xl text-xs"
+                className="px-2.5 py-1 bg-orange-600 hover:bg-orange-700 text-white font-extrabold text-[10.5px] rounded-lg shadow-sm active:scale-95 transition"
               >
-                Izinkan Notifikasi Push
+                Aktifkan
+              </button>
+              <button
+                onClick={() => setShowPermissionBanner(false)}
+                className="p-1 text-[#8A796E] hover:text-[#3E2F26] dark:hover:text-white"
+                title="Sembunyikan"
+              >
+                <X className="w-3 h-3" />
               </button>
             </div>
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="px-5 py-3 flex items-center justify-between border-b border-[#E8DACB] dark:border-white/10 text-xs">
-          <span className="text-[#8A796E] dark:text-[#BDB0A4] font-extrabold">
-            {notifications.length} pemberitahuan
-          </span>
-          <div className="flex items-center space-x-3">
+        {/* Clean Tabs & Bulk Actions */}
+        <div className="px-3.5 py-2 flex items-center justify-between border-b border-[#E8DACB]/60 dark:border-white/5 text-xs flex-shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
+          {/* Filter Pills */}
+          <div className="flex items-center space-x-1">
             <button
-              onClick={onMarkAllRead}
-              className="text-orange-600 dark:text-orange-400 hover:underline font-extrabold flex items-center space-x-1 transition cursor-pointer"
+              onClick={() => setFilter('all')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                filter === 'all'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-[#8A796E] dark:text-[#BDB0A4] hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
             >
-              <CheckCheck className="w-3.5 h-3.5" />
-              <span>Tandai Dibaca</span>
+              Semua ({notifications.length})
             </button>
-            <span className="text-[#8A796E]">•</span>
             <button
-              onClick={onClearAll}
-              className="text-rose-600 dark:text-rose-400 hover:underline font-extrabold flex items-center space-x-1 transition cursor-pointer"
+              onClick={() => setFilter('unread')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition ${
+                filter === 'unread'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'text-[#8A796E] dark:text-[#BDB0A4] hover:bg-black/5 dark:hover:bg-white/5'
+              }`}
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Bersihkan</span>
+              Belum Dibaca ({unreadCount})
             </button>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center space-x-2">
+            {unreadCount > 0 && (
+              <button
+                onClick={onMarkAllRead}
+                className="text-orange-600 dark:text-orange-400 hover:underline font-extrabold text-[11px] flex items-center space-x-1 transition cursor-pointer"
+                title="Tandai semua telah dibaca"
+              >
+                <CheckCheck className="w-3 h-3" />
+                <span className="hidden xs:inline">Baca Semua</span>
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={onClearAll}
+                className="text-rose-600 dark:text-rose-400 hover:underline font-extrabold text-[11px] flex items-center space-x-1 transition cursor-pointer"
+                title="Hapus semua riwayat"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span className="hidden xs:inline">Hapus</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Notifications List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
-          {notifications.length === 0 ? (
-            <div className="text-center py-16 text-[#8A796E] text-xs">
-              <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-emerald-500/80" />
-              <p className="font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] text-sm">
-                Tidak ada notifikasi baru
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 divide-y divide-transparent">
+          {filteredNotifications.length === 0 ? (
+            <div className="text-center py-10 sm:py-14 px-4 text-[#8A796E]">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2 border border-emerald-200 dark:border-emerald-900/50 shadow-inner">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <p className="font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] text-xs sm:text-sm">
+                {filter === 'unread' ? 'Semua notifikasi telah dibaca' : 'Tidak ada notifikasi'}
               </p>
-              <p className="mt-1 text-[#8A796E] dark:text-[#BDB0A4] font-medium">
-                Semua tugas dan anggaran Anda dalam status aman dan terpantau.
+              <p className="mt-0.5 text-[11px] text-[#8A796E] dark:text-[#BDB0A4] font-medium max-w-xs mx-auto">
+                {filter === 'unread' 
+                  ? 'Bagus! Kamu sudah mengecek semua pemberitahuan.' 
+                  : 'Tugas dan pengeluaran kamu berjalan dengan aman dan terpantau.'}
               </p>
             </div>
           ) : (
-            notifications.map((n) => (
+            filteredNotifications.map((n) => (
               <div
                 key={n.id}
-                className={`p-3.5 rounded-2xl clay-card-sm transition ${
+                className={`p-2.5 sm:p-3 rounded-xl sm:rounded-2xl transition border ${
                   !n.read
-                    ? 'border-2 border-orange-500/40 bg-orange-50/40 dark:bg-orange-950/20'
-                    : 'opacity-70'
+                    ? 'border-orange-400/50 bg-orange-50/70 dark:bg-orange-950/30 shadow-xs'
+                    : 'border-[#E8DACB]/60 dark:border-white/5 bg-white/40 dark:bg-[#26201C]/40 opacity-85'
                 }`}
               >
-                <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-xl bg-orange-100/60 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800 flex-shrink-0 mt-0.5 shadow-inner">
+                <div className="flex items-start space-x-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-orange-100/80 dark:bg-orange-950/80 border border-orange-200 dark:border-orange-800 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                     {getIcon(n.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-extrabold truncate text-[#3E2F26] dark:text-[#FAF4EE]">
+                    <div className="flex items-center justify-between gap-1">
+                      <h4 className="text-[11.5px] sm:text-xs font-extrabold truncate text-[#3E2F26] dark:text-[#FAF4EE]">
                         {n.title}
                       </h4>
-                      <span className="text-[10px] text-[#8A796E] dark:text-[#BDB0A4] font-bold">
+                      <span className="text-[9.5px] sm:text-[10px] text-[#8A796E] dark:text-[#BDB0A4] font-bold flex-shrink-0">
                         {new Date(n.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
-                    <p className="text-xs text-[#5A453A] dark:text-[#D4C7BC] mt-1 leading-snug font-medium">
+                    <p className="text-[11px] sm:text-xs text-[#5A453A] dark:text-[#D4C7BC] mt-0.5 leading-snug font-medium line-clamp-2">
                       {n.message}
                     </p>
                   </div>
+                  {!n.read && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 flex-shrink-0 mt-1.5" />
+                  )}
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-[#E8DACB] dark:border-white/10 text-center">
-          <p className="text-[11px] text-[#8A796E] dark:text-[#BDB0A4] font-medium">
-            Sistem pengingat berjalan secara real-time di latar belakang.
+        {/* Compact Footer */}
+        <div className="px-4 py-2 sm:py-2.5 border-t border-[#E8DACB] dark:border-white/10 text-center flex-shrink-0 bg-black/[0.02] dark:bg-white/[0.02]">
+          <p className="text-[10px] text-[#8A796E] dark:text-[#BDB0A4] font-medium flex items-center justify-center space-x-1">
+            <Sparkles className="w-3 h-3 text-orange-500 inline" />
+            <span>Pengingat & pemantau otomatis aktif secara real-time</span>
           </p>
         </div>
 
@@ -190,3 +262,4 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
     </div>
   );
 };
+

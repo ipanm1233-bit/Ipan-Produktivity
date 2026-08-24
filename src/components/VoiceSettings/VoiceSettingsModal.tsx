@@ -9,10 +9,11 @@ import {
   Sliders, 
   Check, 
   BellRing,
-  HelpCircle
+  HelpCircle,
+  Square
 } from 'lucide-react';
 import { VoiceSettings } from '../../types';
-import { getAvailableVoices, speakText } from '../../utils/audio';
+import { getAvailableVoices, speakText, stopSpeaking } from '../../utils/audio';
 
 interface VoiceSettingsModalProps {
   isOpen: boolean;
@@ -54,6 +55,11 @@ export const VoiceSettingsModal: React.FC<VoiceSettingsModalProps> = ({
   if (!isOpen) return null;
 
   const handleTestVoice = async () => {
+    if (isPlayingTest) {
+      stopSpeaking();
+      setIsPlayingTest(false);
+      return;
+    }
     setIsPlayingTest(true);
     const testSettings: VoiceSettings = {
       enabled: true,
@@ -79,8 +85,11 @@ export const VoiceSettingsModal: React.FC<VoiceSettingsModalProps> = ({
       sampleSpeech = `Pengingat tugas untuk ${userName}: Selesaikan Laporan Evaluasi pukul 16:30.`;
     }
 
-    await speakText(sampleSpeech, testSettings);
-    setIsPlayingTest(false);
+    try {
+      await speakText(sampleSpeech, testSettings);
+    } finally {
+      setIsPlayingTest(false);
+    }
   };
 
   const handleSave = () => {
@@ -100,32 +109,32 @@ export const VoiceSettingsModal: React.FC<VoiceSettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-lg clay-modal overflow-hidden transition my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-lg clay-modal flex flex-col max-h-[88vh] sm:max-h-[85vh] rounded-[24px] sm:rounded-[32px] overflow-hidden my-auto shadow-2xl transition-all">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
-              <Volume2 className="w-6 h-6" />
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
+              <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">Personalisasi Pengingat Suara</h2>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium">
+              <h2 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">Personalisasi Suara AI</h2>
+              <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium line-clamp-1">
                 Atur gaya bicara, nama panggilan, dan intonasi suara AI
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="clay-button p-2.5 rounded-2xl text-[#8A796E] dark:text-[#D4C7BC]"
+            className="clay-button p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-[#8A796E] dark:text-[#D4C7BC] flex-shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div className="p-3.5 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
           
           {/* Main Switch */}
           <div className={`p-4 rounded-2xl transition flex items-center justify-between ${
@@ -294,11 +303,28 @@ export const VoiceSettingsModal: React.FC<VoiceSettingsModalProps> = ({
             <button
               type="button"
               onClick={handleTestVoice}
-              disabled={isPlayingTest}
-              className="w-full py-3.5 rounded-2xl clay-button text-orange-600 dark:text-orange-400 font-extrabold text-xs flex items-center justify-center space-x-2 transition"
+              className={`w-full py-3.5 rounded-2xl clay-button text-orange-600 dark:text-orange-400 font-extrabold text-xs flex items-center justify-center space-x-2 transition ${
+                isPlayingTest ? 'border-2 border-orange-500 bg-orange-50/80 dark:bg-orange-950/40' : ''
+              }`}
             >
-              <Play className={`w-4 h-4 ${isPlayingTest ? 'animate-spin' : ''}`} />
-              <span>{isPlayingTest ? 'Sedang Berbicara...' : 'Uji Coba Pengingat Suara'}</span>
+              {isPlayingTest ? (
+                <>
+                  <Square className="w-4 h-4 fill-orange-600 dark:fill-orange-400 animate-pulse" />
+                  <span className="flex items-center space-x-1.5">
+                    <span>Sedang Berbicara (Klik untuk Stop)</span>
+                    <span className="flex space-x-0.5 items-center">
+                      <span className="w-1 h-3 bg-orange-600 dark:bg-orange-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                      <span className="w-1 h-4 bg-orange-600 dark:bg-orange-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                      <span className="w-1 h-2 bg-orange-600 dark:bg-orange-400 rounded-full animate-bounce"></span>
+                    </span>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  <span>Uji Coba Pengingat Suara AI</span>
+                </>
+              )}
             </button>
           </div>
 

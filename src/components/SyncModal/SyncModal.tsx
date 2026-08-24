@@ -89,32 +89,32 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-lg clay-modal overflow-hidden transition my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-lg clay-modal flex flex-col max-h-[88vh] sm:max-h-[85vh] rounded-[24px] sm:rounded-[32px] overflow-hidden my-auto shadow-2xl transition-all">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
-              <Radio className="w-6 h-6 animate-pulse" />
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
+              <Radio className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">Sinkronisasi Real-Time Lintas Perangkat</h2>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium">
-                Hubungkan HP, Laptop, atau Tablet dengan Kode Sync yang sama
+              <h2 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">Sinkronisasi Real-Time</h2>
+              <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium line-clamp-1">
+                Hubungkan HP, Laptop, atau Tablet dengan Kode Sync
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="clay-button p-2.5 rounded-2xl text-[#8A796E] dark:text-[#D4C7BC]"
+            className="clay-button p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-[#8A796E] dark:text-[#D4C7BC] flex-shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div className="p-3.5 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
           
           {/* Active Room Code Card */}
           <div className="p-5 rounded-3xl clay-card text-center relative overflow-hidden">

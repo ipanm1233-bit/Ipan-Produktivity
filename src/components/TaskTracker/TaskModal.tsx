@@ -162,20 +162,20 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-2xl clay-modal overflow-hidden transition-all my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-2xl clay-modal flex flex-col max-h-[88vh] sm:max-h-[85vh] rounded-[24px] sm:rounded-[32px] overflow-hidden my-auto shadow-2xl transition-all">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner">
-              <CheckSquare className="w-6 h-6" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
+              <CheckSquare className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
+              <h2 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
                 {taskToEdit ? 'Ubah Tugas' : 'Tambah Tugas Baru'}
               </h2>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium">
+              <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium line-clamp-1">
                 Lengkapi prioritas, tenggat waktu, dan pengingat suara
               </p>
             </div>
@@ -183,18 +183,18 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <button
             id="close-task-modal-btn"
             onClick={onClose}
-            className="clay-button p-2.5 rounded-2xl text-[#8A796E] dark:text-[#D4C7BC]"
+            className="clay-button p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-[#8A796E] dark:text-[#D4C7BC] flex-shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-3.5 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1">
           
           {/* Title */}
           <div>
-            <label className="block text-xs font-extrabold uppercase tracking-wider mb-2 text-[#8A796E] dark:text-[#BDB0A4]">
+            <label className="block text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 text-[#8A796E] dark:text-[#BDB0A4]">
               Judul Tugas <span className="text-rose-500">*</span>
             </label>
             <input
@@ -204,13 +204,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               placeholder="Contoh: Selesaikan Desain Wireframe Dashboard"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 clay-input text-sm font-bold text-[#3E2F26] dark:text-[#FAF4EE] placeholder-[#A8988D] focus:outline-none transition"
+              className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 clay-input text-xs sm:text-sm font-bold text-[#3E2F26] dark:text-[#FAF4EE] placeholder-[#A8988D] focus:outline-none transition"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-extrabold uppercase tracking-wider mb-2 text-[#8A796E] dark:text-[#BDB0A4]">
+            <label className="block text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 text-[#8A796E] dark:text-[#BDB0A4]">
               Deskripsi & Catatan
             </label>
             <textarea
@@ -219,15 +219,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               placeholder="Tambahkan detail instruksi atau link referensi..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-3 clay-input text-sm font-medium text-[#3E2F26] dark:text-[#FAF4EE] placeholder-[#A8988D] focus:outline-none transition resize-none"
+              className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 clay-input text-xs sm:text-sm font-medium text-[#3E2F26] dark:text-[#FAF4EE] placeholder-[#A8988D] focus:outline-none transition resize-none"
             />
           </div>
 
           {/* Grid: Priority & Category */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Priority */}
             <div>
-              <label className="block text-xs font-extrabold uppercase tracking-wider mb-2 text-[#8A796E] dark:text-[#BDB0A4]">
+              <label className="block text-[11px] sm:text-xs font-extrabold uppercase tracking-wider mb-1.5 text-[#8A796E] dark:text-[#BDB0A4]">
                 <Flag className="w-3.5 h-3.5 inline mr-1 text-orange-600 dark:text-orange-400" />
                 Tingkat Prioritas
               </label>
@@ -245,7 +245,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                       type="button"
                       key={lvl}
                       onClick={() => setPriority(lvl)}
-                      className={`py-2.5 px-1 text-xs font-extrabold rounded-2xl transition cursor-pointer ${
+                      className={`py-2 px-1 text-[11px] sm:text-xs font-extrabold rounded-xl sm:rounded-2xl transition cursor-pointer ${
                         isSelected 
                           ? 'clay-button-primary text-white' 
                           : 'clay-button text-[#6B5A4E] dark:text-[#D4C7BC]'
@@ -260,15 +260,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             {/* Category */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#BDB0A4]">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#BDB0A4]">
                   <Tag className="w-3.5 h-3.5 inline mr-1 text-orange-600 dark:text-orange-400" />
                   Kategori
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsAddingNewCategory(!isAddingNewCategory)}
-                  className="text-[11px] font-bold text-orange-600 dark:text-orange-400 hover:underline"
+                  className="text-[10px] sm:text-[11px] font-bold text-orange-600 dark:text-orange-400 hover:underline"
                 >
                   {isAddingNewCategory ? 'Batal' : '+ Kategori Baru'}
                 </button>
@@ -287,7 +287,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     type="color"
                     value={newCatColor}
                     onChange={(e) => setNewCatColor(e.target.value)}
-                    className="w-10 h-10 rounded-2xl cursor-pointer border-0 bg-transparent"
+                    className="w-9 h-9 rounded-xl cursor-pointer border-0 bg-transparent"
                   />
                   <button
                     type="button"

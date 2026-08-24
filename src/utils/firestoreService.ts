@@ -11,25 +11,53 @@ export interface FirestoreSyncStatus {
 }
 
 /**
+ * Deeply sanitizes any object or array to remove `undefined` values,
+ * which cause Firestore's setDoc to fail with "Unsupported field value: undefined".
+ */
+export function sanitizeForFirestore<T>(data: T): T {
+  if (data === undefined) {
+    return null as any;
+  }
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+  if (Array.isArray(data)) {
+    return data.map((item) => sanitizeForFirestore(item)) as any;
+  }
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    if (value !== undefined) {
+      cleaned[key] = sanitizeForFirestore(value);
+    }
+  }
+  return cleaned as T;
+}
+
+/**
  * Save application state directly to Firebase Firestore
  */
 export async function saveToFirestore(roomId: string, data: AppSyncData): Promise<boolean> {
   if (!roomId) return false;
   try {
-    const roomRef = doc(db, ROOMS_COLLECTION, roomId);
-    await setDoc(roomRef, {
+    const rawPayload = {
       roomId,
-      tasks: data.tasks,
-      transactions: data.transactions,
-      taskCategories: data.taskCategories,
-      financeCategories: data.financeCategories,
-      monthlyBudget: data.monthlyBudget,
-      voiceSettings: data.voiceSettings,
+      tasks: data.tasks || [],
+      transactions: data.transactions || [],
+      taskCategories: data.taskCategories || [],
+      financeCategories: data.financeCategories || [],
+      monthlyBudget: data.monthlyBudget || { totalBudget: 0, categoryBudgets: {}, alertThresholdPercent: 80 },
+      voiceSettings: data.voiceSettings || {},
       notifications: data.notifications || [],
-      theme: data.theme,
-      lastUpdated: Date.now(),
+      theme: data.theme || 'light',
+      lastUpdated: data.lastUpdated || Date.now(),
       updatedAt: new Date().toISOString(),
-    }, { merge: true });
+    };
+
+    // Deep sanitize to guarantee no `undefined` values reach setDoc
+    const sanitizedPayload = sanitizeForFirestore(rawPayload);
+
+    const roomRef = doc(db, ROOMS_COLLECTION, roomId);
+    await setDoc(roomRef, sanitizedPayload, { merge: true });
     return true;
   } catch (err: any) {
     console.error('Error saving to Firestore:', err);
@@ -84,3 +112,4 @@ export function subscribeToFirestoreRoom(
     return null;
   }
 }
+

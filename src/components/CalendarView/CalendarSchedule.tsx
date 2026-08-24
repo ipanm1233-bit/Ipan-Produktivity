@@ -388,21 +388,21 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
 
       {/* POP-UP DETAIL MODAL (3D CLAYMORPHIC MODAL) */}
       {isDetailModalOpen && selectedDateStr && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150">
           <div 
-            className="relative w-full max-w-2xl clay-modal overflow-hidden transition my-6 sm:my-8 max-h-[90vh] flex flex-col"
+            className="relative w-full max-w-2xl clay-modal flex flex-col max-h-[88vh] sm:max-h-[85vh] rounded-[24px] sm:rounded-[32px] overflow-hidden my-auto shadow-2xl transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             
             {/* Modal Header */}
-            <div className="px-5 sm:px-6 py-4 sm:py-5 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between flex-shrink-0">
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#E8DACB] dark:border-white/10 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center space-x-3 min-w-0">
-                <div className="w-11 h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/70 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/70 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
                   <CalendarDays className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center space-x-2">
-                    <h2 className="text-base sm:text-lg font-black text-[#3E2F26] dark:text-[#FAF4EE] truncate">
+                    <h2 className="text-sm sm:text-base font-black text-[#3E2F26] dark:text-[#FAF4EE] truncate">
                       {new Date(selectedDateStr + 'T00:00:00').toLocaleDateString('id-ID', { 
                         weekday: 'long', 
                         day: 'numeric', 
@@ -411,12 +411,12 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
                       })}
                     </h2>
                     {selectedDateStr === todayStr && (
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-orange-500 text-white shadow-xs">
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-orange-500 text-white shadow-xs flex-shrink-0">
                         Hari Ini
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium mt-0.5">
+                  <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium mt-0.5 line-clamp-1">
                     Ringkasan agenda tugas dan transaksi keuangan harian
                   </p>
                 </div>
@@ -424,54 +424,54 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
 
               <button
                 onClick={() => setIsDetailModalOpen(false)}
-                className="clay-button p-2.5 rounded-2xl text-[#8A796E] dark:text-[#D4C7BC] hover:text-[#3E2F26] transition flex-shrink-0 ml-2"
+                className="clay-button p-2 sm:p-2.5 rounded-xl sm:rounded-2xl text-[#8A796E] dark:text-[#D4C7BC] hover:text-[#3E2F26] transition flex-shrink-0 ml-2"
                 title="Tutup Modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
             {/* Quick Summary Bento Ribbon */}
-            <div className="px-5 sm:px-6 pt-4 pb-2 grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 flex-shrink-0">
-              <div className="p-3 rounded-2xl clay-card-sm flex flex-col justify-between">
+            <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-2 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 flex-shrink-0">
+              <div className="p-2.5 sm:p-3 rounded-2xl clay-card-sm flex flex-col justify-between">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#BDB0A4]">
                   Total Tugas
                 </span>
-                <div className="flex items-baseline space-x-1.5 mt-1">
-                  <span className="text-lg font-black text-[#3E2F26] dark:text-[#FAF4EE]">
+                <div className="flex items-baseline space-x-1.5 mt-0.5">
+                  <span className="text-base sm:text-lg font-black text-[#3E2F26] dark:text-[#FAF4EE]">
                     {selectedTasks.length}
                   </span>
-                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                  <span className="text-[10px] sm:text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
                     ({completedTasksCount} selesai)
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-2xl clay-card-sm flex flex-col justify-between">
+              <div className="p-2.5 sm:p-3 rounded-2xl clay-card-sm flex flex-col justify-between">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                   Pemasukan
                 </span>
-                <span className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1 truncate">
+                <span className="text-xs sm:text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5 truncate">
                   +Rp {selectedIncome.toLocaleString('id-ID')}
                 </span>
               </div>
 
-              <div className="col-span-2 sm:col-span-1 p-3 rounded-2xl clay-card-sm flex flex-col justify-between">
+              <div className="col-span-2 sm:col-span-1 p-2.5 sm:p-3 rounded-2xl clay-card-sm flex flex-col justify-between">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">
                   Pengeluaran
                 </span>
-                <span className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400 mt-1 truncate">
+                <span className="text-xs sm:text-base font-black text-rose-600 dark:text-rose-400 mt-0.5 truncate">
                   -Rp {selectedExpense.toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
 
             {/* Modal Navigation Pill Tabs */}
-            <div className="px-5 sm:px-6 pt-2 pb-1 flex items-center justify-between flex-shrink-0 border-b border-[#E8DACB] dark:border-white/10">
-              <div className="flex items-center space-x-1.5 p-1 rounded-2xl bg-[#E8DACB] dark:bg-[#1E1A17] shadow-inner text-xs font-extrabold">
+            <div className="px-4 sm:px-6 pt-1.5 pb-2 flex items-center justify-between flex-shrink-0 border-b border-[#E8DACB] dark:border-white/10 gap-2">
+              <div className="flex items-center space-x-1 p-1 rounded-2xl bg-[#E8DACB] dark:bg-[#1E1A17] shadow-inner text-[11px] sm:text-xs font-extrabold overflow-x-auto">
                 <button
                   onClick={() => setActiveModalTab('all')}
-                  className={`px-3 py-1.5 rounded-xl transition ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition whitespace-nowrap ${
                     activeModalTab === 'all'
                       ? 'clay-button-primary text-white shadow-xs'
                       : 'text-[#5A453A] dark:text-[#D4C7BC] hover:text-[#3E2F26]'
@@ -481,7 +481,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveModalTab('tasks')}
-                  className={`px-3 py-1.5 rounded-xl transition ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition whitespace-nowrap ${
                     activeModalTab === 'tasks'
                       ? 'clay-button-primary text-white shadow-xs'
                       : 'text-[#5A453A] dark:text-[#D4C7BC] hover:text-[#3E2F26]'
@@ -491,7 +491,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
                 </button>
                 <button
                   onClick={() => setActiveModalTab('finance')}
-                  className={`px-3 py-1.5 rounded-xl transition ${
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition whitespace-nowrap ${
                     activeModalTab === 'finance'
                       ? 'clay-button-primary text-white shadow-xs'
                       : 'text-[#5A453A] dark:text-[#D4C7BC] hover:text-[#3E2F26]'
@@ -502,13 +502,13 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
               </div>
 
               {/* Fast Action Buttons */}
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-1.5 flex-shrink-0">
                 <button
                   onClick={() => {
                     setIsDetailModalOpen(false);
                     onOpenNewTaskModal(selectedDateStr + 'T14:00');
                   }}
-                  className="clay-button-primary p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center space-x-1 shadow-xs"
+                  className="clay-button-primary p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold flex items-center space-x-1 shadow-xs"
                   title="Tambah tugas di tanggal ini"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -520,7 +520,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
                     setIsDetailModalOpen(false);
                     onOpenNewTxModal(selectedDateStr);
                   }}
-                  className="clay-button p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold text-orange-600 dark:text-orange-400 flex items-center space-x-1 shadow-xs"
+                  className="clay-button p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs font-extrabold text-orange-600 dark:text-orange-400 flex items-center space-x-1 shadow-xs"
                   title="Tambah transaksi di tanggal ini"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -530,7 +530,7 @@ export const CalendarSchedule: React.FC<CalendarScheduleProps> = ({
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 max-h-[55vh]">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
               
               {/* SECTION 1: TASKS */}
               {(activeModalTab === 'all' || activeModalTab === 'tasks') && (

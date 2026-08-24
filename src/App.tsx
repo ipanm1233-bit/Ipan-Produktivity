@@ -35,6 +35,7 @@ import { CalendarSchedule } from './components/CalendarView/CalendarSchedule';
 import { VoiceSettingsModal } from './components/VoiceSettings/VoiceSettingsModal';
 import { SyncModal } from './components/SyncModal/SyncModal';
 import { NotificationDrawer } from './components/Notifications/NotificationDrawer';
+import { FluidBottomNav } from './components/Navigation/FluidBottomNav';
 import { 
   Home, 
   CheckSquare, 
@@ -81,6 +82,11 @@ export default function App() {
       localStorage.setItem('productivity_theme', 'light');
     }
   }, [darkMode]);
+
+  // Scroll to top when switching tab views
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeTab]);
 
   // Persist locally and trigger debounced sync push to server & Firestore
   useEffect(() => {
@@ -546,41 +552,12 @@ export default function App() {
 
       </div>
 
-      {/* MOBILE BOTTOM NAVIGATION BAR */}
-      <nav 
-        aria-label="Mobile Navigation"
-        className={`md:hidden fixed bottom-0 left-0 right-0 z-40 border-t pt-2 pb-safe-bottom px-2 flex items-center justify-around backdrop-blur-xl transition-all ${
-          darkMode ? 'bg-[#221E1B]/95 border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.4)]' : 'bg-[#FAF3EC]/95 border-white/80 shadow-[0_-4px_20px_rgba(186,163,143,0.25)]'
-        }`}
-        style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}
-      >
-        {[
-          { id: 'dashboard', label: 'Beranda', icon: Home },
-          { id: 'tasks', label: 'Tugas', icon: CheckSquare },
-          { id: 'finance', label: 'Keuangan', icon: DollarSign },
-          { id: 'calendar', label: 'Kalender', icon: CalendarIcon },
-          { id: 'analytics', label: 'Statistik', icon: BarChart3 },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-xl text-[10px] font-bold transition-all ${
-                isActive 
-                  ? 'text-orange-600 dark:text-orange-400 font-extrabold scale-105' 
-                  : 'text-[#8A796E] dark:text-[#A8988D] hover:text-[#3E2F26] dark:hover:text-white'
-              }`}
-            >
-              <div className={`p-1 rounded-xl transition ${isActive ? 'bg-orange-500/15 border border-orange-500/30' : ''}`}>
-                <Icon className="w-4 h-4" />
-              </div>
-              <span className="truncate whitespace-nowrap mt-0.5">{tab.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      {/* FLUID MOBILE BOTTOM NAVIGATION BAR WITH 3D ORB */}
+      <FluidBottomNav
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        darkMode={darkMode}
+      />
 
       {/* Modals & Slide-over Drawers */}
       <TaskModal

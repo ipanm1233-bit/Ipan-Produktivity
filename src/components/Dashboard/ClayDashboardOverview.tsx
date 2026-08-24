@@ -16,22 +16,23 @@ import {
   Volume2, 
   Clock, 
   Calendar, 
-  Tag, 
   Plus, 
   ArrowUpRight, 
   Sparkles, 
   Play, 
-  Pause,
   Layers,
-  Award,
   DollarSign,
-  Briefcase,
-  Music,
   Heart,
-  Timer
+  Timer,
+  Check,
+  Zap,
+  Tag,
+  Image as ImageIcon,
+  Square
 } from 'lucide-react';
-import { speakText, playChime } from '../../utils/audio';
-import heroImg from '../../assets/images/male_hero_clay_1787560757332.jpg';
+import { speakText, playChime, stopSpeaking } from '../../utils/audio';
+import clayAvatarBg from '../../assets/images/clay_avatar_bg_1787581636772.jpg';
+import clayAvatarCutout from '../../assets/images/clay_avatar_cutout_1787581662245.jpg';
 
 interface ClayDashboardOverviewProps {
   tasks: Task[];
@@ -61,7 +62,8 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
   darkMode,
 }) => {
   const [isPlayingBrief, setIsPlayingBrief] = useState(false);
-  const [activeBarIndex, setActiveBarIndex] = useState<number | null>(null);
+  const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
+  const [avatarMode, setAvatarMode] = useState<'desk' | 'cutout'>('desk');
 
   // User details
   const userName = voiceSettings.userName || 'Ipan';
@@ -71,6 +73,7 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
   const completedTasks = tasks.filter(t => t.completed).length;
   const pendingTasks = tasks.filter(t => !t.completed);
   const pendingCount = pendingTasks.length;
+  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // Finance calculations
   const totalIncome = transactions
@@ -100,17 +103,24 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
     greetingIcon = '🌙';
   }
 
-  // Voice briefing trigger
+  // Voice briefing trigger with toggle support
   const handlePlayVoiceBriefing = async () => {
-    if (isPlayingBrief) return;
+    if (isPlayingBrief) {
+      stopSpeaking();
+      setIsPlayingBrief(false);
+      return;
+    }
     setIsPlayingBrief(true);
     playChime('success');
 
     const topTask = pendingTasks[0]?.title || 'semua tugasmu sudah beres';
     const briefText = `Selamat ${greetingTime.toLowerCase()}, ${userName}! Hari ini kamu memiliki ${pendingCount} tugas yang perlu diselesaikan. Tugas prioritas utamamu adalah ${topTask}. Sisa saldo dompetmu saat ini adalah Rp ${netBalance.toLocaleString('id-ID')}. Tetap semangat dan produktif hari ini!`;
 
-    await speakText(briefText, voiceSettings);
-    setIsPlayingBrief(false);
+    try {
+      await speakText(briefText, voiceSettings);
+    } finally {
+      setIsPlayingBrief(false);
+    }
   };
 
   const handleSpeakSingleTask = async (task: Task, e: React.MouseEvent) => {
@@ -121,50 +131,106 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
     await speakText(text, voiceSettings);
   };
 
-  // Weekly bar data
-  const daysOfWeek = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-  const weeklyActivity = [
-    { day: 'Sen', value: 4, height: '65%', color: 'from-amber-400 to-orange-500' },
-    { day: 'Sel', value: 6, height: '90%', color: 'from-orange-400 to-rose-500' },
-    { day: 'Rab', value: 3, height: '50%', color: 'from-rose-400 to-pink-500' },
-    { day: 'Kam', value: 5, height: '78%', color: 'from-emerald-400 to-teal-500' },
-    { day: 'Jum', value: 4, height: '60%', color: 'from-teal-400 to-cyan-500' },
-    { day: 'Sab', value: 7, height: '98%', color: 'from-cyan-400 to-blue-500' },
-    { day: 'Min', value: 5, height: '75%', color: 'from-indigo-400 to-purple-500' },
-  ];
+  // Generate dynamic 7 days weekly data based on real tasks
+  const daysOfWeek = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+  const today = new Date();
+  
+  const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(today.getDate() - (6 - i));
+    const dayKey = d.toISOString().slice(0, 10);
+    const dayName = daysOfWeek[d.getDay()];
+    
+    // Real task completions or defaults
+    const doneOnDay = tasks.filter(
+      (t) => (t.completedAt && t.completedAt.slice(0, 10) === dayKey) ||
+             (t.completed && t.dueDate && t.dueDate.slice(0, 10) === dayKey)
+    ).length;
+    
+    const plannedOnDay = tasks.filter(
+      (t) => t.dueDate && t.dueDate.slice(0, 10) === dayKey
+    ).length;
 
-  // Category distribution for pie / donut breakdown
-  const categoryDist = [
-    { label: 'Pekerjaan', percent: 45, color: '#E67E51' },
-    { label: 'Belanja & Makan', percent: 25, color: '#F2A365' },
-    { label: 'Tagihan Rutin', percent: 15, color: '#68B0AB' },
-    { label: 'Investasi/Kas', percent: 10, color: '#8E9AAF' },
-    { label: 'Lain-lain', percent: 5, color: '#CBC0D3' },
+    // Use actual count if tasks exist, otherwise aesthetic baseline
+    const val = (doneOnDay > 0 || plannedOnDay > 0) 
+      ? Math.max(doneOnDay, plannedOnDay)
+      : [4, 6, 3, 5, 4, 7, 5][i];
+
+    const maxVal = 8;
+    const heightPercent = Math.max(20, Math.min(100, Math.round((val / maxVal) * 100)));
+    
+    const gradients = [
+      'from-amber-400 to-orange-500',
+      'from-orange-400 to-rose-500',
+      'from-rose-400 to-pink-500',
+      'from-emerald-400 to-teal-500',
+      'from-teal-400 to-cyan-500',
+      'from-cyan-400 to-blue-500',
+      'from-indigo-400 to-purple-500',
+    ];
+
+    return {
+      day: dayName,
+      dateLabel: `${d.getDate()}/${d.getMonth() + 1}`,
+      value: val,
+      height: `${heightPercent}%`,
+      color: gradients[i % gradients.length],
+      isToday: i === 6,
+    };
+  });
+
+  // Calculate dynamic category distribution from actual categories
+  const dynamicDist = taskCategories.length > 0 ? taskCategories.slice(0, 4).map((cat, index) => {
+    const catTasks = tasks.filter(t => t.category === cat.id).length;
+    const colors = ['#E67E51', '#F2A365', '#68B0AB', '#8E9AAF'];
+    return {
+      label: cat.name,
+      count: catTasks,
+      percent: totalTasks > 0 ? Math.round((catTasks / totalTasks) * 100) : [45, 25, 18, 12][index] || 15,
+      color: cat.color || colors[index % colors.length],
+    };
+  }) : [
+    { label: 'Pekerjaan', count: 4, percent: 45, color: '#E67E51' },
+    { label: 'Belanja & Makan', count: 2, percent: 25, color: '#F2A365' },
+    { label: 'Tagihan Rutin', count: 2, percent: 18, color: '#68B0AB' },
+    { label: 'Investasi/Kas', count: 1, percent: 12, color: '#8E9AAF' },
   ];
 
   return (
     <div className="space-y-6">
       
-      {/* 3D HERO BANNER CARD (Soft Claymorphism & Male Character Scene) */}
-      <section className={`relative rounded-[32px] overflow-hidden p-6 sm:p-8 transition-all ${
+      {/* 1. HERO BANNER CARD (Claymorphism & Character Scene) */}
+      <section className={`relative rounded-[32px] overflow-hidden p-5 sm:p-7 transition-all ${
         darkMode 
           ? 'bg-gradient-to-r from-[#2C2420] via-[#241E1C] to-[#1E1917] border border-white/10 shadow-2xl' 
           : 'bg-gradient-to-r from-[#FDEFE3] via-[#FDF3EA] to-[#F7E6D7] border-2 border-white/80 shadow-[0_12px_32px_rgba(195,160,135,0.22)]'
       }`}>
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
           
-          {/* Left: 3D Illustration / Character Graphic */}
-          <div className="relative w-full max-w-[280px] sm:max-w-[340px] aspect-video lg:aspect-4/3 rounded-2xl overflow-hidden border-2 border-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.12)] flex-shrink-0 group">
+          {/* Left: 3D Clay Character Illustration Graphic */}
+          <div className="relative w-full max-w-[280px] sm:max-w-[320px] aspect-square sm:aspect-4/3 rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.12)] flex-shrink-0 group bg-[#F5ECE2] dark:bg-[#1A1614]">
             <img
-              src={heroImg}
-              alt="Male productivity workspace 3D illustration"
+              src={avatarMode === 'desk' ? clayAvatarBg : clayAvatarCutout}
+              alt="Karakter 3D Clay Ipan"
               referrerPolicy="no-referrer"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
-            <span className="absolute bottom-2.5 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase border border-white/20">
-              Personal Workspace 3D
-            </span>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none"></div>
+            
+            {/* Mode Switcher Pill */}
+            <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-auto">
+              <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[9.5px] font-bold tracking-wider uppercase border border-white/20">
+                {avatarMode === 'desk' ? 'Studio Clay' : 'Clay Cutout'}
+              </span>
+              <button
+                onClick={() => setAvatarMode(avatarMode === 'desk' ? 'cutout' : 'desk')}
+                className="px-2.5 py-1 rounded-full bg-white/90 dark:bg-[#2A2420]/90 backdrop-blur-md text-[#3E2F26] dark:text-white text-[9.5px] font-extrabold flex items-center space-x-1 shadow-sm hover:scale-105 transition active:scale-95 border border-white/40"
+                title="Ganti tampilan karakter (Dengan Background / Cutout)"
+              >
+                <ImageIcon className="w-3 h-3 text-orange-500" />
+                <span>{avatarMode === 'desk' ? 'Mode Cutout' : 'Mode Studio'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Right: Content & Action */}
@@ -186,20 +252,37 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
               Kamu punya <b className="text-orange-600 dark:text-orange-400 font-bold">{pendingCount} tugas aktif</b> yang menunggu. Pantau juga pengeluaran agar tetap dalam batas anggaran bulanan.
             </p>
 
-            {/* 3D Clay Action Buttons */}
+            {/* Clay Action Buttons */}
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
               <button
                 onClick={handlePlayVoiceBriefing}
-                disabled={isPlayingBrief}
-                className="clay-button-primary px-5 py-3 rounded-full text-xs font-bold flex items-center space-x-2 shadow-lg transition"
+                className={`clay-button-primary px-5 py-2.5 sm:py-3 rounded-full text-xs font-bold flex items-center space-x-2 shadow-lg transition active:scale-95 ${
+                  isPlayingBrief ? 'ring-2 ring-white/60 bg-gradient-to-r from-orange-600 to-amber-600' : ''
+                }`}
               >
-                <Play className={`w-4 h-4 fill-white ${isPlayingBrief ? 'animate-spin' : ''}`} />
-                <span>{isPlayingBrief ? 'Memutar Suara AI...' : 'Dengarkan Briefing Suara'}</span>
+                {isPlayingBrief ? (
+                  <>
+                    <Square className="w-3.5 h-3.5 fill-white animate-pulse" />
+                    <span className="flex items-center space-x-1.5">
+                      <span>Sedang Berbicara</span>
+                      <span className="flex space-x-0.5 items-center">
+                        <span className="w-1 h-3 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1 h-4 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1 h-2 bg-white rounded-full animate-bounce"></span>
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-white" />
+                    <span>Dengarkan Briefing Suara AI</span>
+                  </>
+                )}
               </button>
 
               <button
                 onClick={onOpenNewTaskModal}
-                className={`clay-button px-5 py-3 rounded-full text-xs font-bold flex items-center space-x-2 transition ${
+                className={`clay-button px-5 py-2.5 sm:py-3 rounded-full text-xs font-bold flex items-center space-x-2 transition active:scale-95 ${
                   darkMode ? 'text-zinc-200' : 'text-[#5A453A]'
                 }`}
               >
@@ -212,418 +295,507 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
         </div>
       </section>
 
-      {/* 4 STAT CARDS (3D Claymorphic Bento Metrics) */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {/* 2. 4 SYMMETRICAL STAT CARDS (Equal height & balanced rhythm) */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 items-stretch">
         
         {/* Card 1: Tasks Done */}
-        <div className={`clay-card p-5 transition-transform hover:-translate-y-1 ${
+        <div className={`clay-card p-5 flex flex-col justify-between transition-transform hover:-translate-y-1 ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner border border-emerald-500/30">
-              <CheckCircle2 className="w-6 h-6" />
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner border border-emerald-500/30">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                {taskCompletionRate}% selesai
+              </span>
             </div>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-              +18% minggu ini
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
+              Tugas Selesai
             </span>
+            <div className="flex items-baseline space-x-2 mt-1">
+              <h3 className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                {completedTasks}<span className="text-sm font-bold text-[#8A796E] dark:text-[#A8988D]">/{totalTasks}</span>
+              </h3>
+            </div>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
-            Tugas Selesai
-          </span>
-          <div className="flex items-baseline space-x-2 mt-1">
-            <h3 className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-              {completedTasks}<span className="text-sm font-bold text-[#8A796E] dark:text-[#A8988D]">/{totalTasks}</span>
-            </h3>
+          <div className="pt-3 mt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px] text-[#8A796E] dark:text-[#A8988D] font-medium">
+            <span>{pendingCount} tugas aktif</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">{completedTasks} tuntas</span>
           </div>
-          <p className="text-[10px] text-[#8A796E] dark:text-[#A8988D] mt-1 font-medium">
-            {pendingCount} tugas tersisa
-          </p>
         </div>
 
         {/* Card 2: Wallet Balance */}
-        <div className={`clay-card p-5 transition-transform hover:-translate-y-1 ${
+        <div className={`clay-card p-5 flex flex-col justify-between transition-transform hover:-translate-y-1 ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-inner border border-rose-500/30">
-              <Heart className="w-6 h-6 fill-rose-500/30" />
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-11 h-11 rounded-2xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-inner border border-rose-500/30">
+                <Heart className="w-6 h-6 fill-rose-500/30" />
+              </div>
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                netBalance >= 0 
+                  ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' 
+                  : 'bg-rose-500/15 text-rose-600 border-rose-500/30'
+              }`}>
+                {netBalance >= 0 ? '+Surplus' : '-Defisit'}
+              </span>
             </div>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
-              +8% hemat
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
+              Saldo Kas & Dompet
             </span>
+            <div className="flex items-baseline space-x-1 mt-1 min-w-0">
+              <h3 className={`text-xl sm:text-2xl font-black truncate ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                Rp {netBalance > 0 ? (netBalance / 1000).toLocaleString('id-ID') : '0'}k
+              </h3>
+            </div>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
-            Saldo Kas & Dompet
-          </span>
-          <div className="flex items-baseline space-x-1 mt-1">
-            <h3 className={`text-xl sm:text-2xl font-black ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-              Rp {netBalance > 0 ? (netBalance / 1000).toLocaleString('id-ID') : '0'}k
-            </h3>
+          <div className="pt-3 mt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px] text-[#8A796E] dark:text-[#A8988D] font-medium">
+            <span>Masuk: Rp {(totalIncome / 1000000).toFixed(1)}jt</span>
+            <span className="text-rose-500 font-semibold">Keluar: Rp {(totalExpense / 1000000).toFixed(1)}jt</span>
           </div>
-          <p className="text-[10px] text-[#8A796E] dark:text-[#A8988D] mt-1 font-medium">
-            Total Kas Masuk Rp {(totalIncome / 1000000).toFixed(1)}jt
-          </p>
         </div>
 
         {/* Card 3: Monthly Expense */}
-        <div className={`clay-card p-5 transition-transform hover:-translate-y-1 ${
+        <div className={`clay-card p-5 flex flex-col justify-between transition-transform hover:-translate-y-1 ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-inner border border-amber-500/30">
-              <Timer className="w-6 h-6" />
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-inner border border-amber-500/30">
+                <Timer className="w-6 h-6" />
+              </div>
+              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                budgetUsedPercent > 80 
+                  ? 'bg-rose-500/15 text-rose-600 border-rose-500/30' 
+                  : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+              }`}>
+                {budgetUsedPercent}% limit
+              </span>
             </div>
-            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
-              budgetUsedPercent > 80 
-                ? 'bg-rose-500/15 text-rose-600 border-rose-500/30' 
-                : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-            }`}>
-              {budgetUsedPercent}% limit
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
+              Pengeluaran Bulan Ini
             </span>
+            <div className="flex items-baseline space-x-1 mt-1 min-w-0">
+              <h3 className={`text-xl sm:text-2xl font-black truncate ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                Rp {(totalExpense / 1000).toLocaleString('id-ID')}k
+              </h3>
+            </div>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
-            Pengeluaran Bulan Ini
-          </span>
-          <div className="flex items-baseline space-x-1 mt-1">
-            <h3 className={`text-xl sm:text-2xl font-black ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-              Rp {(totalExpense / 1000).toLocaleString('id-ID')}k
-            </h3>
+          <div className="pt-3 mt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px] text-[#8A796E] dark:text-[#A8988D] font-medium">
+            <span>Batas Anggaran</span>
+            <span className="font-bold text-[#5A453A] dark:text-[#C5B7AE]">Rp {(totalBudget / 1000000).toFixed(1)}jt</span>
           </div>
-          <p className="text-[10px] text-[#8A796E] dark:text-[#A8988D] mt-1 font-medium">
-            Batas Anggaran Rp {(totalBudget / 1000000).toFixed(1)}jt
-          </p>
         </div>
 
         {/* Card 4: Focus Streak */}
-        <div className={`clay-card p-5 transition-transform hover:-translate-y-1 ${
+        <div className={`clay-card p-5 flex flex-col justify-between transition-transform hover:-translate-y-1 ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-11 h-11 rounded-2xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-inner border border-blue-500/30">
-              <Flame className="w-6 h-6 fill-blue-500/30" />
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-11 h-11 rounded-2xl bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-inner border border-blue-500/30">
+                <Flame className="w-6 h-6 fill-blue-500/30" />
+              </div>
+              <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                Level 4 Pro
+              </span>
             </div>
-            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30">
-              Level 4 Pro
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
+              Streak Produktivitas
             </span>
+            <div className="flex items-baseline space-x-2 mt-1">
+              <h3 className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                7 <span className="text-sm font-bold text-[#8A796E] dark:text-[#A8988D]">Hari Berturut</span>
+              </h3>
+            </div>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
-            Streak Produktivitas
-          </span>
-          <div className="flex items-baseline space-x-2 mt-1">
-            <h3 className={`text-2xl font-black ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-              7 <span className="text-sm font-bold text-[#8A796E] dark:text-[#A8988D]">Hari Berturut-turut</span>
-            </h3>
+          <div className="pt-3 mt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px] text-[#8A796E] dark:text-[#A8988D] font-medium">
+            <span>🔥 Konsistensi tinggi</span>
+            <span className="font-bold text-orange-500">Pertahankan!</span>
           </div>
-          <p className="text-[10px] text-[#8A796E] dark:text-[#A8988D] mt-1 font-medium">
-            🔥 Pertahankan ritme kerjamu!
-          </p>
         </div>
 
       </section>
 
-      {/* MIDDLE ROW: 3D CLAY CHARTS & BREAKDOWN */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* 3. MIDDLE ROW: BALANCED 3D CLAY CHARTS & BREAKDOWN */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* Left: 3D Rounded Weekly Activity Bar Chart (7 Cols) */}
-        <div className={`lg:col-span-7 clay-card p-6 ${
+        <div className={`lg:col-span-7 clay-card p-5 sm:p-6 flex flex-col justify-between ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-                Aktivitas & Fokus Mingguan
-              </h3>
-              <p className="text-xs text-[#8A796E] dark:text-[#A8988D] mt-0.5 font-medium">
-                Penyelesaian tugas harian dalam 7 hari terakhir
-              </p>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                  Aktivitas & Fokus Mingguan
+                </h3>
+                <p className="text-xs text-[#8A796E] dark:text-[#A8988D] mt-0.5 font-medium">
+                  Tugas yang diselesaikan dalam 7 hari terakhir
+                </p>
+              </div>
+              <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#EAE0D5] dark:bg-[#332C28] text-[#5A453A] dark:text-[#C5B7AE] border border-white/20">
+                7 Hari Terakhir
+              </span>
             </div>
-            <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#EAE0D5] dark:bg-[#332C28] text-[#5A453A] dark:text-[#C5B7AE] border border-white/20">
-              Minggu Ini ▾
-            </span>
+
+            {/* Info hover banner */}
+            <div className="h-6 flex items-center justify-end px-1">
+              {hoveredBarIndex !== null ? (
+                <span className="text-xs font-extrabold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2.5 py-0.5 rounded-full border border-orange-500/20">
+                  {weeklyActivity[hoveredBarIndex].day} ({weeklyActivity[hoveredBarIndex].dateLabel}): {weeklyActivity[hoveredBarIndex].value} tugas
+                </span>
+              ) : (
+                <span className="text-[11px] text-[#8A796E] dark:text-[#A8988D] font-medium">
+                  Arahkan kursor ke bar untuk detail harian
+                </span>
+              )}
+            </div>
+
+            {/* 3D Bar Chart Visual */}
+            <div className="h-44 flex items-end justify-between px-2 pt-2 pb-1 gap-2 sm:gap-3">
+              {weeklyActivity.map((item, idx) => (
+                <div 
+                  key={item.day} 
+                  className="flex flex-col items-center flex-1 group cursor-pointer"
+                  onMouseEnter={() => setHoveredBarIndex(idx)}
+                  onMouseLeave={() => setHoveredBarIndex(null)}
+                >
+                  {/* 3D Clay Pill Bar */}
+                  <div className="w-full max-w-[36px] bg-[#E8DDD2] dark:bg-[#322A26] rounded-full h-32 flex items-end p-1 shadow-inner relative overflow-hidden">
+                    <div 
+                      style={{ height: item.height }}
+                      className={`w-full rounded-full bg-gradient-to-t ${item.color} shadow-md transition-all duration-300 group-hover:brightness-110 relative`}
+                    >
+                      <div className="absolute top-1 left-1 right-1 h-2 bg-white/40 rounded-full"></div>
+                    </div>
+                  </div>
+
+                  {/* Day label */}
+                  <span className={`text-[11px] font-bold mt-2.5 transition-colors ${
+                    hoveredBarIndex === idx 
+                      ? 'text-orange-600 dark:text-orange-400 font-black' 
+                      : item.isToday 
+                      ? 'text-orange-500 font-extrabold'
+                      : 'text-[#8A796E] dark:text-[#A8988D]'
+                  }`}>
+                    {item.day}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* 3D Bar Chart Visual */}
-          <div className="h-44 flex items-end justify-between px-2 pt-4 pb-1">
-            {weeklyActivity.map((item, idx) => (
-              <div 
-                key={item.day} 
-                className="flex flex-col items-center flex-1 group cursor-pointer"
-                onMouseEnter={() => setActiveBarIndex(idx)}
-                onMouseLeave={() => setActiveBarIndex(null)}
-              >
-                {/* Tooltip on hover */}
-                <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md mb-2 transition-all ${
-                  activeBarIndex === idx 
-                    ? 'bg-[#3E2F26] text-white opacity-100 scale-100' 
-                    : 'opacity-0 scale-95 pointer-events-none'
-                }`}>
-                  {item.value} tugas
-                </div>
-
-                {/* 3D Clay Pill Bar */}
-                <div className="w-7 sm:w-9 bg-[#E8DDD2] dark:bg-[#322A26] rounded-full h-32 flex items-end p-1 shadow-inner relative overflow-hidden">
-                  <div 
-                    style={{ height: item.height }}
-                    className={`w-full rounded-full bg-gradient-to-t ${item.color} shadow-md transition-all duration-500 group-hover:brightness-110 relative`}
-                  >
-                    <div className="absolute top-1 left-1 right-1 h-2 bg-white/40 rounded-full"></div>
-                  </div>
-                </div>
-
-                {/* Day label */}
-                <span className={`text-[11px] font-bold mt-2.5 ${
-                  activeBarIndex === idx ? 'text-orange-600 dark:text-orange-400' : 'text-[#8A796E] dark:text-[#A8988D]'
-                }`}>
-                  {item.day}
-                </span>
-              </div>
-            ))}
+          <div className="pt-3 mt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-[#8A796E] dark:text-[#A8988D]">
+            <span>Total minggu ini: <strong className="text-[#3E2F26] dark:text-white">{weeklyActivity.reduce((s, a) => s + a.value, 0)} tugas</strong></span>
+            <button
+              onClick={() => onNavigateTab('analytics')}
+              className="text-orange-600 dark:text-orange-400 font-bold hover:underline flex items-center space-x-1"
+            >
+              <span>Lihat Detail Statistik</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
         {/* Right: Category Breakdown Donut / Pie Chart (5 Cols) */}
-        <div className={`lg:col-span-5 clay-card p-6 ${
+        <div className={`lg:col-span-5 clay-card p-5 sm:p-6 flex flex-col justify-between ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-                Distribusi Kategori
-              </h3>
-              <p className="text-xs text-[#8A796E] dark:text-[#A8988D] mt-0.5 font-medium">
-                Alokasi fokus waktu & pengeluaran
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-2">
-            
-            {/* Donut Chart representation */}
-            <div className="relative w-32 h-32 flex items-center justify-center flex-shrink-0">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                {/* Segment 1: Pekerjaan (45%) */}
-                <path
-                  className="text-[#E67E51] transition-all"
-                  strokeWidth="6"
-                  strokeDasharray="45, 100"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                {/* Segment 2: Belanja (25%) */}
-                <path
-                  className="text-[#F2A365] transition-all"
-                  strokeWidth="6"
-                  strokeDashoffset="-45"
-                  strokeDasharray="25, 100"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                {/* Segment 3: Tagihan (15%) */}
-                <path
-                  className="text-[#68B0AB] transition-all"
-                  strokeWidth="6"
-                  strokeDashoffset="-70"
-                  strokeDasharray="15, 100"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                {/* Segment 4: Investasi (10%) */}
-                <path
-                  className="text-[#8E9AAF] transition-all"
-                  strokeWidth="6"
-                  strokeDashoffset="-85"
-                  strokeDasharray="10, 100"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-lg font-black leading-tight text-[#E67E51]">45%</span>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D]">
-                  Utama
-                </span>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                  Distribusi Kategori
+                </h3>
+                <p className="text-xs text-[#8A796E] dark:text-[#A8988D] mt-0.5 font-medium">
+                  Alokasi fokus waktu & tugas
+                </p>
               </div>
             </div>
 
-            {/* Legend Breakdown */}
-            <div className="flex-1 space-y-2 w-full">
-              {categoryDist.map((cat) => (
-                <div key={cat.label} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span 
-                      className="w-3 h-3 rounded-full shadow-xs" 
-                      style={{ backgroundColor: cat.color }}
-                    ></span>
-                    <span className="font-bold text-[#5A453A] dark:text-[#C5B7AE]">{cat.label}</span>
-                  </div>
-                  <span className="font-extrabold text-[#3E2F26] dark:text-white">{cat.percent}%</span>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 pt-1">
+              
+              {/* Donut Chart representation */}
+              <div className="relative w-32 h-32 flex items-center justify-center flex-shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  {/* Base Circle */}
+                  <path
+                    className="text-[#E8DDD2] dark:text-[#322A26]"
+                    strokeWidth="5"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  {/* Segment 1: Pekerjaan (45%) */}
+                  <path
+                    stroke="#E67E51"
+                    strokeWidth="5.5"
+                    strokeDasharray="45, 100"
+                    strokeLinecap="round"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  {/* Segment 2: Belanja (25%) */}
+                  <path
+                    stroke="#F2A365"
+                    strokeWidth="5.5"
+                    strokeDashoffset="-45"
+                    strokeDasharray="25, 100"
+                    strokeLinecap="round"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  {/* Segment 3: Tagihan (18%) */}
+                  <path
+                    stroke="#68B0AB"
+                    strokeWidth="5.5"
+                    strokeDashoffset="-70"
+                    strokeDasharray="18, 100"
+                    strokeLinecap="round"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  {/* Segment 4: Investasi (12%) */}
+                  <path
+                    stroke="#8E9AAF"
+                    strokeWidth="5.5"
+                    strokeDashoffset="-88"
+                    strokeDasharray="12, 100"
+                    strokeLinecap="round"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center text-center">
+                  <span className="text-lg font-black leading-tight text-[#E67E51]">
+                    {dynamicDist[0]?.percent || 45}%
+                  </span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D]">
+                    Fokus
+                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
 
+              {/* Legend Breakdown */}
+              <div className="flex-1 space-y-2 w-full">
+                {dynamicDist.map((cat) => (
+                  <div key={cat.label} className="flex items-center justify-between text-xs p-1.5 rounded-xl bg-white/40 dark:bg-black/20">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span 
+                        className="w-3 h-3 rounded-full shadow-xs flex-shrink-0" 
+                        style={{ backgroundColor: cat.color }}
+                      ></span>
+                      <span className="font-bold text-[#5A453A] dark:text-[#C5B7AE] truncate">{cat.label}</span>
+                    </div>
+                    <span className="font-black text-[#3E2F26] dark:text-white flex-shrink-0 ml-2">{cat.percent}%</span>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-[#8A796E] dark:text-[#A8988D]">
+            <span>{dynamicDist.length} kategori aktif</span>
+            <button
+              onClick={() => onNavigateTab('tasks')}
+              className="text-orange-600 dark:text-orange-400 font-bold hover:underline flex items-center space-x-1"
+            >
+              <span>Kelola Kategori</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
       </section>
 
-      {/* BOTTOM ROW: RECENT TASKS & FINANCIAL DAILY MIX */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 4. BOTTOM ROW: SYMMETRICAL RECENT TASKS & RECENT TRANSACTIONS */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         
-        {/* Left: Recently Planned Tasks with Audio Button */}
-        <div className={`clay-card p-6 ${
+        {/* Left: Recently Planned Tasks */}
+        <div className={`clay-card p-5 sm:p-6 flex flex-col justify-between ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-xl bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4" />
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                  Tugas Prioritas Hari Ini
+                </h3>
               </div>
-              <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-                Tugas Prioritas Hari Ini
-              </h3>
+              <button
+                onClick={() => onNavigateTab('tasks')}
+                className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline flex items-center space-x-1"
+              >
+                <span>Lihat Semua</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <button
-              onClick={() => onNavigateTab('tasks')}
-              className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline flex items-center space-x-1"
-            >
-              <span>Lihat Semua</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
+
+            <div className="space-y-2.5">
+              {tasks.length > 0 ? (
+                tasks.slice(0, 4).map((task) => (
+                  <div
+                    key={task.id}
+                    onClick={() => onToggleTaskComplete(task.id)}
+                    className={`p-3 rounded-2xl border transition flex items-center justify-between cursor-pointer ${
+                      task.completed
+                        ? darkMode
+                          ? 'bg-[#1E1917]/50 border-white/5 opacity-60'
+                          : 'bg-[#F2E8DF]/60 border-black/5 opacity-60'
+                        : darkMode
+                        ? 'bg-[#2E2824] border-white/10 hover:border-orange-500/40 shadow-sm'
+                        : 'bg-white border-white hover:border-orange-300 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleTaskComplete(task.id);
+                        }}
+                        className="p-1 text-orange-600 focus:outline-none flex-shrink-0"
+                      >
+                        {task.completed ? (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-500/20" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-[#A8988D]" />
+                        )}
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`text-xs sm:text-sm font-bold truncate ${
+                          task.completed ? 'line-through text-[#8A796E]' : darkMode ? 'text-zinc-100' : 'text-[#3E2F26]'
+                        }`}>
+                          {task.title}
+                        </h4>
+                        <div className="flex items-center space-x-2 mt-0.5 text-[11px] text-[#8A796E] dark:text-[#A8988D]">
+                          <span className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1 text-orange-500" />
+                            {new Date(task.dueDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span>•</span>
+                          <span className="capitalize font-semibold">{task.priority}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      title="Dengarkan Pengingat Suara"
+                      onClick={(e) => handleSpeakSingleTask(task, e)}
+                      className="p-2 rounded-xl bg-[#FAF3EC] dark:bg-[#3A322D] hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-white/30 transition ml-2 flex-shrink-0"
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center rounded-2xl bg-white/40 dark:bg-black/20 text-xs text-[#8A796E] dark:text-[#A8988D]">
+                  Belum ada tugas hari ini. Klik tombol di bawah untuk menambahkan!
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="space-y-2.5">
-            {tasks.slice(0, 4).map((task) => (
-              <div
-                key={task.id}
-                onClick={() => onToggleTaskComplete(task.id)}
-                className={`p-3.5 rounded-2xl border transition flex items-center justify-between cursor-pointer ${
-                  task.completed
-                    ? darkMode
-                      ? 'bg-[#1E1917]/50 border-white/5 opacity-60'
-                      : 'bg-[#F2E8DF]/60 border-black/5 opacity-60'
-                    : darkMode
-                    ? 'bg-[#2E2824] border-white/10 hover:border-orange-500/40 shadow-sm'
-                    : 'bg-white border-white hover:border-orange-300 shadow-sm'
-                }`}
-              >
-                <div className="flex items-center space-x-3 min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleTaskComplete(task.id);
-                    }}
-                    className="p-1 text-orange-600 focus:outline-none"
-                  >
-                    {task.completed ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-500/20" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-[#A8988D]" />
-                    )}
-                  </button>
-
-                  <div className="min-w-0 flex-1">
-                    <h4 className={`text-xs sm:text-sm font-bold truncate ${
-                      task.completed ? 'line-through text-[#8A796E]' : darkMode ? 'text-zinc-100' : 'text-[#3E2F26]'
-                    }`}>
-                      {task.title}
-                    </h4>
-                    <div className="flex items-center space-x-2 mt-0.5 text-[11px] text-[#8A796E] dark:text-[#A8988D]">
-                      <span className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1 text-orange-500" />
-                        {new Date(task.dueDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span>•</span>
-                      <span className="capitalize font-semibold">{task.priority}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  title="Dengarkan Pengingat Suara"
-                  onClick={(e) => handleSpeakSingleTask(task, e)}
-                  className="p-2 rounded-xl bg-[#FAF3EC] dark:bg-[#3A322D] hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-white/30 transition ml-2 flex-shrink-0"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+          {/* Symmetrical Footer Action */}
+          <div className="pt-3 mt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+            <span className="text-xs text-[#8A796E] dark:text-[#A8988D] font-medium">
+              {pendingCount} tugas tersisa
+            </span>
+            <button
+              onClick={onOpenNewTaskModal}
+              className="clay-button-primary px-4 py-2 rounded-full text-xs font-bold shadow-md transition active:scale-95 flex items-center space-x-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Tambah Tugas</span>
+            </button>
           </div>
         </div>
 
-        {/* Right: Financial Transactions & Daily Mix */}
-        <div className={`clay-card p-6 ${
+        {/* Right: Symmetrical Financial Transactions */}
+        <div className={`clay-card p-5 sm:p-6 flex flex-col justify-between ${
           darkMode ? 'bg-[#25201D]' : 'bg-[#FAF3EC]'
         }`}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                <DollarSign className="w-4 h-4" />
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+                <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
+                  Transaksi & Kas Terkini
+                </h3>
               </div>
-              <h3 className={`text-base font-extrabold ${darkMode ? 'text-white' : 'text-[#3E2F26]'}`}>
-                Transaksi & Kas Terkini
-              </h3>
-            </div>
-            <button
-              onClick={() => onNavigateTab('finance')}
-              className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline flex items-center space-x-1"
-            >
-              <span>Lihat Keuangan</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-2.5">
-            {transactions.slice(0, 4).map((tx) => (
-              <div
-                key={tx.id}
-                className={`p-3 rounded-2xl border flex items-center justify-between ${
-                  darkMode ? 'bg-[#2E2824] border-white/10' : 'bg-white border-white'
-                }`}
+              <button
+                onClick={() => onNavigateTab('finance')}
+                className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline flex items-center space-x-1"
               >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
-                    tx.type === 'income'
-                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-                      : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-                  }`}>
-                    {tx.type === 'income' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className={`text-xs sm:text-sm font-bold truncate ${darkMode ? 'text-zinc-100' : 'text-[#3E2F26]'}`}>
-                      {tx.title}
-                    </h4>
-                    <span className="text-[10px] text-[#8A796E] dark:text-[#A8988D] capitalize font-medium">
-                      {tx.date} • {tx.paymentMethod}
-                    </span>
-                  </div>
-                </div>
+                <span>Lihat Keuangan</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-                <div className="text-right">
-                  <span className={`text-xs sm:text-sm font-black ${
-                    tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                  }`}>
-                    {tx.type === 'income' ? '+' : '-'} Rp {tx.amount.toLocaleString('id-ID')}
-                  </span>
+            <div className="space-y-2.5">
+              {transactions.length > 0 ? (
+                transactions.slice(0, 4).map((tx) => (
+                  <div
+                    key={tx.id}
+                    className={`p-3 rounded-2xl border flex items-center justify-between ${
+                      darkMode ? 'bg-[#2E2824] border-white/10' : 'bg-white border-white'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center border flex-shrink-0 ${
+                        tx.type === 'income'
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                          : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                      }`}>
+                        {tx.type === 'income' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className={`text-xs sm:text-sm font-bold truncate ${darkMode ? 'text-zinc-100' : 'text-[#3E2F26]'}`}>
+                          {tx.title}
+                        </h4>
+                        <span className="text-[10px] text-[#8A796E] dark:text-[#A8988D] capitalize font-medium block truncate">
+                          {tx.date} • {tx.paymentMethod}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <span className={`text-xs sm:text-sm font-black ${
+                        tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                      }`}>
+                        {tx.type === 'income' ? '+' : '-'} Rp {tx.amount.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center rounded-2xl bg-white/40 dark:bg-black/20 text-xs text-[#8A796E] dark:text-[#A8988D]">
+                  Belum ada transaksi tercatat. Catat transaksi baru di bawah!
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
 
-          {/* Quick Add Buttons */}
-          <div className="pt-3 mt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-end space-x-2">
+          {/* Symmetrical Footer Action */}
+          <div className="pt-3 mt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+            <span className="text-xs text-[#8A796E] dark:text-[#A8988D] font-medium">
+              {transactions.length} catatan transaksi
+            </span>
             <button
               onClick={onOpenNewTxModal}
-              className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5"
+              className="clay-button-emerald px-4 py-2 rounded-full text-xs font-bold shadow-md transition active:scale-95 flex items-center space-x-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Catat Transaksi</span>
@@ -633,7 +805,7 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
 
       </section>
 
-      {/* BOTTOM CLAY PILL BANNER (Music & Productivity Tips AI) */}
+      {/* 5. BOTTOM CLAY PILL BANNER */}
       <section className={`rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border transition ${
         darkMode 
           ? 'bg-gradient-to-r from-[#2B2724] to-[#241F1C] border-white/10 text-zinc-100' 

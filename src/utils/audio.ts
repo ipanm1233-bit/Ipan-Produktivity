@@ -27,12 +27,12 @@ export function playChime(type: 'success' | 'alert' | 'warning' | 'reminder' | '
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(f, now + i * 0.08);
-        gain.gain.setValueAtTime(0.15, now + i * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.4);
+        gain.gain.setValueAtTime(0.12, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now + i * 0.08);
-        osc.stop(now + i * 0.08 + 0.45);
+        osc.stop(now + i * 0.08 + 0.4);
       });
     } else if (type === 'warning' || type === 'alert') {
       // Two-tone attention tone
@@ -40,13 +40,13 @@ export function playChime(type: 'success' | 'alert' | 'warning' | 'reminder' | '
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(f, now + i * 0.15);
-        gain.gain.setValueAtTime(0.2, now + i * 0.15);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.3);
+        osc.frequency.setValueAtTime(f, now + i * 0.12);
+        gain.gain.setValueAtTime(0.15, now + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.25);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(now + i * 0.15);
-        osc.stop(now + i * 0.15 + 0.35);
+        osc.start(now + i * 0.12);
+        osc.stop(now + i * 0.12 + 0.3);
       });
     } else if (type === 'reminder') {
       // Soft double bell
@@ -54,13 +54,13 @@ export function playChime(type: 'success' | 'alert' | 'warning' | 'reminder' | '
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(f, now + i * 0.12);
-        gain.gain.setValueAtTime(0.18, now + i * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.5);
+        osc.frequency.setValueAtTime(f, now + i * 0.1);
+        gain.gain.setValueAtTime(0.12, now + i * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.35);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(now + i * 0.12);
-        osc.stop(now + i * 0.12 + 0.55);
+        osc.start(now + i * 0.1);
+        osc.stop(now + i * 0.1 + 0.4);
       });
     } else {
       // Quick pop
@@ -69,7 +69,7 @@ export function playChime(type: 'success' | 'alert' | 'warning' | 'reminder' | '
       osc.type = 'sine';
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
-      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.setValueAtTime(0.1, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -77,7 +77,7 @@ export function playChime(type: 'success' | 'alert' | 'warning' | 'reminder' | '
       osc.stop(now + 0.09);
     }
   } catch (err) {
-    console.warn('Audio play failed:', err);
+    console.warn('Audio chime play failed:', err);
   }
 }
 
@@ -87,7 +87,7 @@ export function generateTaskVoicePrompt(task: Task, settings: VoiceSettings): st
     return task.customVoicePrompt;
   }
 
-  const name = settings.userName || 'Sahabat';
+  const name = settings.userName || 'Ipan';
   const priorityId = task.priority === 'urgent' ? 'sangat mendesak' : task.priority === 'high' ? 'tinggi' : task.priority === 'medium' ? 'sedang' : 'rendah';
   
   const dueTime = new Date(task.dueDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -112,66 +112,158 @@ export function generateBudgetVoicePrompt(
   percentUsed: number,
   settings: VoiceSettings
 ): string {
-  const name = settings.userName || 'Sahabat';
+  const name = settings.userName || 'Ipan';
 
   if (type === 'exceeded') {
-    return `Perhatian ${name}! Pengeluaran untuk kategori ${categoryName} telah melebihi batas anggaran bulanan, mencapai ${percentUsed.toFixed(0)}%. Mohon periksa keuangan Anda.`;
+    return `Perhatian ${name}! Pengeluaran untuk kategori ${categoryName} telah melebihi batas anggaran bulanan, mencapai ${percentUsed.toFixed(0)} persen. Mohon periksa keuangan Anda.`;
   } else {
-    return `Peringatan anggaran untuk ${name}. Pengeluaran ${categoryName} sudah mencapai ${percentUsed.toFixed(0)}% dari batas yang ditetapkan. Harap berhati-hati dalam berbelanja.`;
+    return `Peringatan anggaran untuk ${name}. Pengeluaran ${categoryName} sudah mencapai ${percentUsed.toFixed(0)} persen dari batas yang ditetapkan. Harap berhati-hati dalam berbelanja.`;
   }
 }
 
-// Speak personalized text using Web Speech API
-export function speakText(text: string, settings: VoiceSettings): Promise<void> {
+// Active Audio Element reference
+let currentAudioPlayer: HTMLAudioElement | null = null;
+
+// Stop any currently playing speech audio
+export function stopSpeaking() {
+  try {
+    if (currentAudioPlayer) {
+      currentAudioPlayer.pause();
+      currentAudioPlayer.currentTime = 0;
+      currentAudioPlayer = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  } catch (e) {
+    console.warn('Error stopping speech:', e);
+  }
+}
+
+// Speak personalized text using high-fidelity Indonesian TTS with Web Speech API fallback
+export async function speakText(text: string, settings: VoiceSettings): Promise<void> {
+  if (!settings.enabled) {
+    console.log('Voice assistant is disabled in settings');
+    return;
+  }
+
+  stopSpeaking();
+
+  const cleanText = text
+    .replace(/Rp\s?/g, 'Rupiah ')
+    .replace(/%/g, ' persen ')
+    .replace(/\//g, ' atau ')
+    .trim();
+
+  if (!cleanText) return;
+
+  // Primary: High-fidelity natural Indonesian voice via server TTS
+  const playedViaServerTTS = await new Promise<boolean>((resolve) => {
+    try {
+      const audioUrl = `/api/tts?text=${encodeURIComponent(cleanText)}&lang=id`;
+      const audio = new Audio(audioUrl);
+      currentAudioPlayer = audio;
+      
+      audio.volume = settings.volume !== undefined ? Math.max(0, Math.min(1, Number(settings.volume))) : 1.0;
+      audio.playbackRate = settings.rate ? Math.max(0.5, Math.min(2.0, Number(settings.rate))) : 1.0;
+
+      let resolved = false;
+      const onDone = (success: boolean) => {
+        if (!resolved) {
+          resolved = true;
+          if (currentAudioPlayer === audio) {
+            currentAudioPlayer = null;
+          }
+          resolve(success);
+        }
+      };
+
+      audio.onended = () => onDone(true);
+      audio.onerror = (e) => {
+        console.warn('Server TTS failed, switching to browser speech synthesis fallback:', e);
+        onDone(false);
+      };
+
+      // Failsafe timeout in case network hangs
+      setTimeout(() => {
+        if (!resolved) {
+          onDone(true);
+        }
+      }, 30000);
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Audio.play() blocked or failed:', err);
+          onDone(false);
+        });
+      }
+    } catch (err) {
+      console.warn('Server TTS error:', err);
+      resolve(false);
+    }
+  });
+
+  if (playedViaServerTTS) {
+    return;
+  }
+
+  // Fallback: Browser Web Speech API
   return new Promise((resolve) => {
-    if (!('speechSynthesis' in window)) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       console.warn('Speech synthesis not supported on this browser.');
       resolve();
       return;
     }
 
-    if (!settings.enabled) {
-      resolve();
-      return;
-    }
-
-    window.speechSynthesis.cancel(); // Stop any pending speech
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = settings.rate || 1.0;
-    utterance.pitch = settings.pitch || 1.0;
-    utterance.volume = settings.volume !== undefined ? settings.volume : 1.0;
-
-    const voices = window.speechSynthesis.getVoices();
-    if (settings.voiceURI) {
-      const selectedVoice = voices.find((v) => v.voiceURI === settings.voiceURI);
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
+    try {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
       }
-    } else {
-      // Find Indonesian voice if available, else standard fallback
-      const idVoice = voices.find((v) => v.lang.startsWith('id') || v.lang.startsWith('in'));
-      if (idVoice) {
-        utterance.voice = idVoice;
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = Number(settings.rate) || 1.0;
+      utterance.pitch = Number(settings.pitch) || 1.0;
+      utterance.volume = settings.volume !== undefined ? Number(settings.volume) : 1.0;
+      utterance.lang = 'id-ID';
+
+      const voices = window.speechSynthesis.getVoices();
+      if (settings.voiceURI && voices.length > 0) {
+        const selectedVoice = voices.find((v) => v.voiceURI === settings.voiceURI);
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+      } else if (voices.length > 0) {
+        const idVoice = voices.find(
+          (v) => v.lang.toLowerCase().startsWith('id') || 
+                 v.lang.toLowerCase().startsWith('in') || 
+                 v.name.toLowerCase().includes('indonesia')
+        );
+        if (idVoice) {
+          utterance.voice = idVoice;
+        }
       }
-    }
 
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve();
 
-    // Play initial gentle chime before speaking
-    playChime('reminder');
-
-    setTimeout(() => {
       window.speechSynthesis.speak(utterance);
-    }, 200);
+
+      setTimeout(() => {
+        resolve();
+      }, 20000);
+    } catch (err) {
+      console.warn('Fallback SpeechSynthesis failed:', err);
+      resolve();
+    }
   });
 }
 
-// Get all available system speech voices
+// Get all available system speech voices with async retry
 export function getAvailableVoices(): Promise<SpeechSynthesisVoice[]> {
   return new Promise((resolve) => {
-    if (!('speechSynthesis' in window)) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       resolve([]);
       return;
     }
@@ -182,13 +274,19 @@ export function getAvailableVoices(): Promise<SpeechSynthesisVoice[]> {
       return;
     }
 
-    window.speechSynthesis.onvoiceschanged = () => {
+    const handleVoicesChanged = () => {
       voices = window.speechSynthesis.getVoices();
-      resolve(voices);
+      if (voices.length > 0) {
+        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+        resolve(voices);
+      }
     };
 
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+
     setTimeout(() => {
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
       resolve(window.speechSynthesis.getVoices());
-    }, 800);
+    }, 600);
   });
 }
