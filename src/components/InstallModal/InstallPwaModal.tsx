@@ -21,6 +21,8 @@ import {
   triggerTestMobileNotification 
 } from '../../utils/notifications';
 
+import { TaskPanLogo } from '../Common/TaskPanLogo';
+
 interface InstallPwaModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -111,8 +113,8 @@ export const InstallPwaModal: React.FC<InstallPwaModalProps> = ({
 
         {/* Header with 3D Icon */}
         <div className="flex items-center space-x-3.5 mb-5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center shadow-lg flex-shrink-0 border border-white/40">
-            <Smartphone className="w-6 h-6" />
+          <div className="w-13 h-13 rounded-2xl p-1 bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center shadow-lg flex-shrink-0 border border-white/60">
+            <TaskPanLogo size="md" className="w-11 h-11 rounded-xl" />
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-black text-[#3E2F26] dark:text-[#FAF4EE] tracking-tight">
