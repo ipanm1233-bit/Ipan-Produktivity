@@ -1,9 +1,10 @@
 // Service Worker for TaskPan PWA - Offline Support & Push Notifications
-const CACHE_NAME = 'taskpan-pwa-v3';
+const CACHE_NAME = 'taskpan-pwa-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.ico',
   '/icon.svg',
   '/icon-192.png',
   '/icon-512.png',
