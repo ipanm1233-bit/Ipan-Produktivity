@@ -38,6 +38,8 @@ import { NotificationDrawer } from './components/Notifications/NotificationDrawe
 import { InstallPwaModal } from './components/InstallModal/InstallPwaModal';
 import { FluidBottomNav } from './components/Navigation/FluidBottomNav';
 import { ClayPinLock } from './components/PinLock/ClayPinLock';
+import { SecurityPinModal } from './components/PinLock/SecurityPinModal';
+import { QuickTaskEntryModal } from './components/Tasks/QuickTaskEntryModal';
 import { 
   Home, 
   CheckSquare, 
@@ -73,6 +75,8 @@ export default function App() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isSecurityPinModalOpen, setIsSecurityPinModalOpen] = useState(false);
+  const [isQuickEntryModalOpen, setIsQuickEntryModalOpen] = useState(false);
 
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -383,6 +387,36 @@ export default function App() {
     await speakText(`Halo ${name}! Mode fokus diaktifkan. Ayo selesaikan ${pendingCount} tugas prioritasmu dengan tenang dan penuh konsentrasi!`, appData.voiceSettings);
   };
 
+  // Handle Unlock App Screen: Read aloud existing tasks & open Quick Task Entry Popup
+  const handleUnlockApp = () => {
+    setIsLocked(false);
+
+    // 1. Voice briefing: Read aloud existing tasks in natural Indonesian
+    const name = appData.voiceSettings.userName || 'Ipan';
+    const pendingTasks = appData.tasks.filter((t) => !t.completed);
+
+    let speechPrompt = '';
+    if (pendingTasks.length === 0) {
+      speechPrompt = `Selamat datang di TaskPan, ${name}! Saat ini belum ada tugas aktif yang tertunda. Silakan tentukan dan tambahkan tugas baru Anda hari ini.`;
+    } else if (pendingTasks.length === 1) {
+      speechPrompt = `Selamat datang di TaskPan, ${name}! Anda memiliki 1 tugas aktif hari ini, yaitu: "${pendingTasks[0].title}". Silakan tentukan tugas yang ingin Anda kerjakan atau tambahkan sekarang.`;
+    } else {
+      const taskListSpoken = pendingTasks
+        .slice(0, 4)
+        .map((t, idx) => `Tugas ${idx + 1}: "${t.title}"`)
+        .join('. ');
+      const extraCount = pendingTasks.length > 4 ? ` dan ${pendingTasks.length - 4} tugas lainnya` : '';
+      speechPrompt = `Selamat datang di TaskPan, ${name}! Anda memiliki ${pendingTasks.length} tugas aktif hari ini. ${taskListSpoken}${extraCount}. Mau kerjakan atau tambahkan tugas apa sekarang?`;
+    }
+
+    if (appData.voiceSettings.enabled) {
+      speakText(speechPrompt, appData.voiceSettings);
+    }
+
+    // 2. Immediately open the Quick Task Popup Modal
+    setIsQuickEntryModalOpen(true);
+  };
+
   // Filtered tasks for search query
   const displayedTasks = searchQuery.trim()
     ? appData.tasks.filter(t => 
@@ -395,7 +429,7 @@ export default function App() {
   if (isLocked) {
     return (
       <ClayPinLock
-        onUnlock={() => setIsLocked(false)}
+        onUnlock={handleUnlockApp}
         darkMode={darkMode}
         userName={appData.voiceSettings.userName || 'Ipan'}
       />
@@ -420,6 +454,7 @@ export default function App() {
             openSyncModal={() => setIsSyncModalOpen(true)}
             openVoiceModal={() => setIsVoiceModalOpen(true)}
             openInstallModal={() => setIsInstallModalOpen(true)}
+            openSecurityPinModal={() => setIsSecurityPinModalOpen(true)}
             onLockApp={() => setIsLocked(true)}
             darkMode={darkMode}
             onStartFocusBrief={handleStartFocusBrief}
@@ -442,6 +477,7 @@ export default function App() {
             openVoiceModal={() => setIsVoiceModalOpen(true)}
             openNotificationDrawer={() => setIsNotificationDrawerOpen(true)}
             openInstallModal={() => setIsInstallModalOpen(true)}
+            openSecurityPinModal={() => setIsSecurityPinModalOpen(true)}
             onLockApp={() => setIsLocked(true)}
             unreadNotifsCount={unreadNotifsCount}
             voiceSettings={appData.voiceSettings}
@@ -648,6 +684,25 @@ export default function App() {
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
         darkMode={darkMode}
+      />
+
+      {/* Security PIN Manager Modal (Inside App) */}
+      <SecurityPinModal
+        isOpen={isSecurityPinModalOpen}
+        onClose={() => setIsSecurityPinModalOpen(false)}
+        darkMode={darkMode}
+      />
+
+      {/* Quick Task Entry Modal (Voice & Text Task Input) */}
+      <QuickTaskEntryModal
+        isOpen={isQuickEntryModalOpen}
+        onClose={() => setIsQuickEntryModalOpen(false)}
+        onSaveTask={handleSaveTask}
+        categories={appData.taskCategories}
+        existingTasks={appData.tasks}
+        darkMode={darkMode}
+        voiceSettings={appData.voiceSettings}
+        userName={appData.voiceSettings.userName || 'Ipan'}
       />
 
     </div>

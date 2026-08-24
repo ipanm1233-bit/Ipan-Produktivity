@@ -13,10 +13,11 @@ import {
   Sparkles,
   Layers,
   Smartphone,
+  ShieldCheck,
   Lock
 } from 'lucide-react';
 import { VoiceSettings } from '../types';
-import taskplanLogo from '../assets/images/taskplan_app_logo_1787564199598.jpg';
+import { TaskPanLogo } from './Common/TaskPanLogo';
 
 interface NavbarProps {
   activeTab: 'dashboard' | 'tasks' | 'calendar' | 'finance' | 'analytics';
@@ -38,6 +39,7 @@ interface NavbarProps {
   setSearchQuery: (q: string) => void;
   openInstallModal?: () => void;
   onLockApp?: () => void;
+  openSecurityPinModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -59,6 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setSearchQuery,
   openInstallModal,
   onLockApp,
+  openSecurityPinModal,
 }) => {
   const getTabTitle = () => {
     switch (activeTab) {
@@ -83,12 +86,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between w-full md:w-auto gap-3 overflow-visible">
           <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
             {/* TaskPan 3D App Logo */}
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl p-1 bg-gradient-to-tr from-orange-500 to-amber-400 shadow-[0_4px_12px_rgba(234,88,12,0.3)] overflow-hidden flex-shrink-0 border border-white/70">
-              <img
-                src={taskplanLogo}
-                alt="TaskPan 3D Logo"
-                className="w-full h-full object-cover rounded-xl"
-              />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl p-0.5 bg-gradient-to-tr from-orange-500 to-amber-400 shadow-[0_4px_12px_rgba(234,88,12,0.3)] flex items-center justify-center flex-shrink-0 border border-white/70">
+              <TaskPanLogo size="sm" className="w-8 h-8 sm:w-9 sm:h-9" />
             </div>
             
             <div className="min-w-0">
@@ -118,15 +117,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Quick Lock PIN Security (Mobile) */}
-            {onLockApp && (
+            {/* Security PIN Settings / Quick Lock (Mobile) */}
+            {openSecurityPinModal && (
               <button
-                id="mobile-lock-pin-btn"
-                onClick={onLockApp}
-                title="Kunci Layar dengan PIN"
+                id="mobile-security-pin-btn"
+                onClick={openSecurityPinModal}
+                title="Pengaturan PIN Keamanan"
                 className="clay-button w-8.5 h-8.5 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 active:scale-95 transition"
               >
-                <Lock className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4" />
               </button>
             )}
 
@@ -226,13 +225,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
-            {/* Quick Lock PIN Security (Desktop) */}
+            {/* Security PIN Settings & Change PIN */}
+            {openSecurityPinModal && (
+              <button
+                id="desktop-security-pin-btn"
+                onClick={openSecurityPinModal}
+                title="Pengaturan PIN Keamanan (Ganti PIN)"
+                className="clay-button w-10 h-10 rounded-2xl text-xs font-bold flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0 active:scale-95 transition"
+              >
+                <ShieldCheck className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Quick Lock App Screen */}
             {onLockApp && (
               <button
-                id="desktop-lock-pin-btn"
+                id="desktop-lock-app-btn"
                 onClick={onLockApp}
-                title="Kunci Layar dengan PIN Keamanan"
-                className="clay-button w-10 h-10 rounded-2xl text-xs font-bold flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0 active:scale-95 transition"
+                title="Kunci Layar Sekarang (PIN)"
+                className="clay-button w-10 h-10 rounded-2xl text-xs font-bold flex items-center justify-center text-[#5A453A] dark:text-[#C5B7AE] flex-shrink-0 active:scale-95 transition"
               >
                 <Lock className="w-4 h-4" />
               </button>
@@ -248,7 +259,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {voiceSettings.enabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
             </button>
 
-            {/* Notification Center Bell (Desktop with safe outer badge) */}
+            {/* Notification Center Bell */}
             <div className="relative inline-flex items-center justify-center overflow-visible">
               <button
                 id="notification-bell-btn"
@@ -292,5 +303,3 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
-
-

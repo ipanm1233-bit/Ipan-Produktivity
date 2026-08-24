@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Unlock, ShieldCheck, KeyRound, Sparkles, Delete, RefreshCw, Eye, EyeOff } from 'lucide-react';
-import taskplanLogo from '../../assets/images/taskplan_app_logo_1787564199598.jpg';
+import { Lock, ShieldCheck, Delete, Eye, EyeOff } from 'lucide-react';
+import { TaskPanLogo } from '../Common/TaskPanLogo';
 import ipanAvatar from '../../assets/images/ipan_avatar_clay_1787564213642.jpg';
 import { playChime } from '../../utils/audio';
 
@@ -19,12 +19,6 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
   userName = 'Ipan',
 }) => {
   const [pin, setPin] = useState<string>('');
-  const [savedPin, setSavedPin] = useState<string>(() => {
-    return localStorage.getItem(PIN_STORAGE_KEY) || DEFAULT_PIN;
-  });
-  const [isSettingNewPin, setIsSettingNewPin] = useState(false);
-  const [newPinStep, setNewPinStep] = useState<'enter_new' | 'confirm_new'>('enter_new');
-  const [tempNewPin, setTempNewPin] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isShaking, setIsShaking] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
@@ -39,7 +33,7 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
       setErrorMsg('');
 
       if (nextPin.length === targetLength) {
-        verifyOrAdvance(nextPin);
+        verifyPin(nextPin);
       }
     }
   };
@@ -58,42 +52,15 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
     setErrorMsg('');
   };
 
-  // Verify PIN or advance setup
-  const verifyOrAdvance = (enteredPin: string) => {
-    if (isSettingNewPin) {
-      if (newPinStep === 'enter_new') {
-        setTempNewPin(enteredPin);
-        setNewPinStep('confirm_new');
-        setPin('');
-        playChime('success');
-      } else {
-        // Confirm step
-        if (enteredPin === tempNewPin) {
-          localStorage.setItem(PIN_STORAGE_KEY, enteredPin);
-          setSavedPin(enteredPin);
-          setIsSettingNewPin(false);
-          setNewPinStep('enter_new');
-          setTempNewPin('');
-          setPin('');
-          playChime('success');
-          onUnlock();
-        } else {
-          triggerError('PIN konfirmasi tidak cocok! Ulangi.');
-          setPin('');
-          setNewPinStep('enter_new');
-          setTempNewPin('');
-        }
-      }
+  // Verify PIN
+  const verifyPin = (enteredPin: string) => {
+    const currentPin = localStorage.getItem(PIN_STORAGE_KEY) || DEFAULT_PIN;
+    if (enteredPin === currentPin) {
+      playChime('success');
+      onUnlock();
     } else {
-      // Normal unlock verification
-      const currentPin = localStorage.getItem(PIN_STORAGE_KEY) || DEFAULT_PIN;
-      if (enteredPin === currentPin) {
-        playChime('success');
-        onUnlock();
-      } else {
-        triggerError('PIN salah. Silakan coba lagi.');
-        setPin('');
-      }
+      triggerError('PIN salah. Silakan coba lagi.');
+      setPin('');
     }
   };
 
@@ -120,7 +87,7 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pin, isSettingNewPin, newPinStep, tempNewPin, savedPin]);
+  }, [pin]);
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 select-none ${
@@ -141,12 +108,8 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
         
         {/* App Logo & Avatar Badge */}
         <div className="relative mb-4">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl p-1.5 bg-gradient-to-tr from-orange-400 to-amber-300 shadow-[0_10px_25px_rgba(230,126,81,0.4)] overflow-hidden">
-            <img
-              src={taskplanLogo}
-              alt="TaskPlan 3D Logo"
-              className="w-full h-full object-cover rounded-2xl"
-            />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl p-1 bg-gradient-to-tr from-orange-400 to-amber-300 shadow-[0_10px_25px_rgba(230,126,81,0.4)] flex items-center justify-center">
+            <TaskPanLogo size="lg" className="w-16 h-16 sm:w-20 sm:h-20" />
           </div>
           <div className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full p-0.5 bg-white shadow-md overflow-hidden border border-orange-200">
             <img
@@ -166,15 +129,10 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
           <h2 className={`text-xl sm:text-2xl font-black ${
             darkMode ? 'text-[#FAF4EE]' : 'text-[#3E2F26]'
           }`}>
-            {isSettingNewPin 
-              ? (newPinStep === 'enter_new' ? 'Buat PIN Baru' : 'Konfirmasi PIN Baru')
-              : `Halo, ${userName}!`}
+            Halo, {userName}!
           </h2>
           <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium max-w-xs">
-            {isSettingNewPin
-              ? (newPinStep === 'enter_new' ? 'Masukkan 4 digit PIN baru Anda' : 'Ketik ulang PIN baru untuk mengonfirmasi')
-              : 'Masukkan 4-digit PIN keamanan untuk membuka TaskPan'
-            }
+            Masukkan 4-digit PIN keamanan untuk membuka TaskPan
           </p>
         </div>
 
@@ -267,21 +225,12 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
           </button>
         </div>
 
-        {/* Footer Actions: Change PIN & Show/Hide */}
+        {/* Footer Actions: Show/Hide digits and Security Info */}
         <div className="flex items-center justify-between w-full max-w-[260px] pt-1 text-xs text-[#8A796E] dark:text-[#BDB0A4] font-bold">
-          <button
-            onClick={() => {
-              setIsSettingNewPin(!isSettingNewPin);
-              setNewPinStep('enter_new');
-              setTempNewPin('');
-              setPin('');
-              setErrorMsg('');
-            }}
-            className="hover:text-orange-600 dark:hover:text-orange-400 flex items-center space-x-1 transition"
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>{isSettingNewPin ? 'Batal' : 'Ganti PIN'}</span>
-          </button>
+          <div className="flex items-center space-x-1 text-[11px] text-[#A8988D] dark:text-[#7A6B60]">
+            <Lock className="w-3 h-3" />
+            <span>Kunci Terenkripsi</span>
+          </div>
 
           <button
             onClick={() => setShowNumbers(!showNumbers)}

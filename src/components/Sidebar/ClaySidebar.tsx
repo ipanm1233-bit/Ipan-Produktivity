@@ -17,7 +17,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { VoiceSettings } from '../../types';
-import taskplanLogo from '../../assets/images/taskplan_app_logo_1787564199598.jpg';
+import { TaskPanLogo } from '../Common/TaskPanLogo';
 import avatarImg from '../../assets/images/male_avatar_3d_1787560743768.jpg';
 
 interface ClaySidebarProps {
@@ -32,6 +32,7 @@ interface ClaySidebarProps {
   onStartFocusBrief?: () => void;
   openInstallModal?: () => void;
   onLockApp?: () => void;
+  openSecurityPinModal?: () => void;
 }
 
 export const ClaySidebar: React.FC<ClaySidebarProps> = ({
@@ -46,6 +47,7 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
   onStartFocusBrief,
   openInstallModal,
   onLockApp,
+  openSecurityPinModal,
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -67,12 +69,8 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
         
         {/* Brand App 3D Logo Header */}
         <div className="flex items-center space-x-3 px-2 py-2 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/5 dark:from-orange-500/20 dark:to-transparent border border-orange-200/70 dark:border-orange-900/40">
-          <div className="w-11 h-11 rounded-2xl p-1 bg-gradient-to-tr from-orange-500 to-amber-400 shadow-[0_4px_12px_rgba(234,88,12,0.35)] overflow-hidden flex-shrink-0 border border-white/60">
-            <img
-              src={taskplanLogo}
-              alt="TaskPan 3D Logo"
-              className="w-full h-full object-cover rounded-xl"
-            />
+          <div className="w-11 h-11 rounded-2xl p-0.5 bg-gradient-to-tr from-orange-500 to-amber-400 shadow-[0_4px_12px_rgba(234,88,12,0.35)] flex items-center justify-center flex-shrink-0 border border-white/60">
+            <TaskPanLogo size="sm" className="w-9 h-9" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center space-x-1.5">
@@ -164,6 +162,22 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
             <span className="truncate">Sync Room ({syncRoomId})</span>
           </button>
 
+          {/* Security PIN Settings inside the app */}
+          {openSecurityPinModal && (
+            <button
+              id="sidebar-security-pin-btn"
+              onClick={openSecurityPinModal}
+              className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                darkMode
+                  ? 'text-amber-400 hover:text-white hover:bg-amber-500/10'
+                  : 'text-amber-800 hover:text-amber-950 hover:bg-amber-100/60'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-500" />
+              <span className="truncate">Keamanan PIN</span>
+            </button>
+          )}
+
           {/* Quick Trigger for Install PWA & Mobile Notifications */}
           {openInstallModal && (
             <button
@@ -180,7 +194,7 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
             </button>
           )}
 
-          {/* Quick Lock PIN Security */}
+          {/* Quick Lock PIN Screen */}
           {onLockApp && (
             <button
               id="sidebar-lock-pin-btn"
@@ -188,12 +202,12 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
               title="Kunci Layar dengan PIN Keamanan"
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
                 darkMode
-                  ? 'text-amber-400 hover:text-white hover:bg-amber-500/10'
-                  : 'text-amber-800 hover:text-amber-950 hover:bg-amber-100/60'
+                  ? 'text-[#A8988D] hover:text-white hover:bg-white/5'
+                  : 'text-[#8A796E] hover:text-[#3E2F26] hover:bg-[#F2E7DC]'
               }`}
             >
               <Lock className="w-4 h-4 text-amber-500" />
-              <span className="truncate">Kunci Layar (PIN)</span>
+              <span className="truncate">Kunci Layar</span>
             </button>
           )}
         </nav>
