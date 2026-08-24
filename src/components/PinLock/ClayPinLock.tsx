@@ -161,7 +161,7 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
         <div className="space-y-1 mb-6">
           <div className="flex items-center justify-center space-x-1.5 text-xs font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">
             <ShieldCheck className="w-4 h-4" />
-            <span>TaskPlan Security</span>
+            <span>TaskPan Security</span>
           </div>
           <h2 className={`text-xl sm:text-2xl font-black ${
             darkMode ? 'text-[#FAF4EE]' : 'text-[#3E2F26]'
@@ -173,7 +173,7 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
           <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium max-w-xs">
             {isSettingNewPin
               ? (newPinStep === 'enter_new' ? 'Masukkan 4 digit PIN baru Anda' : 'Ketik ulang PIN baru untuk mengonfirmasi')
-              : 'Masukkan 4-digit PIN keamanan untuk membuka akses'
+              : 'Masukkan 4-digit PIN keamanan untuk membuka TaskPan'
             }
           </p>
         </div>

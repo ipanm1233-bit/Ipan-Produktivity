@@ -12,9 +12,11 @@ import {
   Menu,
   Sparkles,
   Layers,
-  Smartphone
+  Smartphone,
+  Lock
 } from 'lucide-react';
 import { VoiceSettings } from '../types';
+import taskplanLogo from '../assets/images/taskplan_app_logo_1787564199598.jpg';
 
 interface NavbarProps {
   activeTab: 'dashboard' | 'tasks' | 'calendar' | 'finance' | 'analytics';
@@ -35,6 +37,7 @@ interface NavbarProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   openInstallModal?: () => void;
+  onLockApp?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -55,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   searchQuery,
   setSearchQuery,
   openInstallModal,
+  onLockApp,
 }) => {
   const getTabTitle = () => {
     switch (activeTab) {
@@ -75,34 +79,61 @@ export const Navbar: React.FC<NavbarProps> = ({
     }`}>
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 overflow-visible">
         
-        {/* Top/Left Row: View Title & Action Buttons on Mobile */}
+        {/* Top/Left Row: App Logo & View Title & Action Buttons on Mobile */}
         <div className="flex items-center justify-between w-full md:w-auto gap-3 overflow-visible">
-          <div className="flex items-center min-w-0">
-            <h1 className={`text-lg sm:text-2xl font-black tracking-tight truncate ${
-              darkMode ? 'text-white' : 'text-[#3E2F26]'
-            }`}>
-              {getTabTitle()}
-            </h1>
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+            {/* TaskPan 3D App Logo */}
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl p-1 bg-gradient-to-tr from-orange-500 to-amber-400 shadow-[0_4px_12px_rgba(234,88,12,0.3)] overflow-hidden flex-shrink-0 border border-white/70">
+              <img
+                src={taskplanLogo}
+                alt="TaskPan 3D Logo"
+                className="w-full h-full object-cover rounded-xl"
+              />
+            </div>
+            
+            <div className="min-w-0">
+              <div className="flex items-center space-x-1.5 leading-none mb-0.5">
+                <span className="font-black text-[10px] text-orange-600 dark:text-orange-400 tracking-wider uppercase">TaskPan</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+              </div>
+              <h1 className={`text-base sm:text-xl font-black tracking-tight truncate ${
+                darkMode ? 'text-white' : 'text-[#3E2F26]'
+              }`}>
+                {getTabTitle()}
+              </h1>
+            </div>
           </div>
 
           {/* Action buttons (Shown on Mobile in top row for quick access) */}
-          <div className="flex md:hidden items-center space-x-2 overflow-visible flex-shrink-0">
+          <div className="flex md:hidden items-center space-x-1.5 overflow-visible flex-shrink-0">
             {/* Install PWA / Mobile App Button */}
             {openInstallModal && (
               <button
                 id="mobile-install-app-btn"
                 onClick={openInstallModal}
                 title="Install ke Layar Utama HP & Notifikasi"
-                className="clay-button w-9 h-9 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 active:scale-95 transition"
+                className="clay-button w-8.5 h-8.5 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 active:scale-95 transition"
               >
                 <Smartphone className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Quick Lock PIN Security (Mobile) */}
+            {onLockApp && (
+              <button
+                id="mobile-lock-pin-btn"
+                onClick={onLockApp}
+                title="Kunci Layar dengan PIN"
+                className="clay-button w-8.5 h-8.5 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 active:scale-95 transition"
+              >
+                <Lock className="w-4 h-4" />
               </button>
             )}
 
             {/* Quick Add Task */}
             <button
               onClick={openAddTask}
-              className="clay-button-primary px-3 h-9 rounded-xl text-xs font-extrabold flex items-center space-x-1 shadow-sm active:scale-95 transition"
+              className="clay-button-primary px-2.5 h-8.5 rounded-xl text-xs font-extrabold flex items-center space-x-1 shadow-sm active:scale-95 transition"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Tugas</span>
@@ -114,7 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="mobile-notification-bell-btn"
                 onClick={openNotificationDrawer}
                 title="Notifikasi & Peringatan"
-                className="clay-button w-9 h-9 rounded-xl flex items-center justify-center text-[#5A453A] dark:text-[#C5B7AE] active:scale-95 transition"
+                className="clay-button w-8.5 h-8.5 rounded-xl flex items-center justify-center text-[#5A453A] dark:text-[#C5B7AE] active:scale-95 transition"
               >
                 <Bell className="w-4 h-4" />
               </button>
@@ -129,7 +160,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={() => setDarkMode(!darkMode)}
               title={darkMode ? 'Tema Terang' : 'Tema Gelap'}
-              className="clay-button w-9 h-9 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-300 active:scale-95 transition"
+              className="clay-button w-8.5 h-8.5 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-300 active:scale-95 transition"
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -192,6 +223,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Smartphone className="w-4 h-4" />
                 <span className="text-[11px] font-extrabold hidden lg:inline">App HP</span>
+              </button>
+            )}
+
+            {/* Quick Lock PIN Security (Desktop) */}
+            {onLockApp && (
+              <button
+                id="desktop-lock-pin-btn"
+                onClick={onLockApp}
+                title="Kunci Layar dengan PIN Keamanan"
+                className="clay-button w-10 h-10 rounded-2xl text-xs font-bold flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0 active:scale-95 transition"
+              >
+                <Lock className="w-4 h-4" />
               </button>
             )}
 

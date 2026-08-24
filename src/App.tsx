@@ -37,6 +37,7 @@ import { SyncModal } from './components/SyncModal/SyncModal';
 import { NotificationDrawer } from './components/Notifications/NotificationDrawer';
 import { InstallPwaModal } from './components/InstallModal/InstallPwaModal';
 import { FluidBottomNav } from './components/Navigation/FluidBottomNav';
+import { ClayPinLock } from './components/PinLock/ClayPinLock';
 import { 
   Home, 
   CheckSquare, 
@@ -52,6 +53,11 @@ export default function App() {
   
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('productivity_theme') === 'dark';
+  });
+
+  // Security PIN Lock Screen State (Enabled when opening app)
+  const [isLocked, setIsLocked] = useState<boolean>(() => {
+    return localStorage.getItem('taskpan_pin_enabled') !== 'false';
   });
 
   // Modal visibility states
@@ -385,6 +391,17 @@ export default function App() {
       )
     : appData.tasks;
 
+  // Render PIN Lock Screen if locked on startup or manually locked
+  if (isLocked) {
+    return (
+      <ClayPinLock
+        onUnlock={() => setIsLocked(false)}
+        darkMode={darkMode}
+        userName={appData.voiceSettings.userName || 'Ipan'}
+      />
+    );
+  }
+
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       darkMode ? 'bg-[#181513] text-[#FAF4EE]' : 'bg-[#F5EBE1] text-[#3E2F26]'
@@ -403,6 +420,7 @@ export default function App() {
             openSyncModal={() => setIsSyncModalOpen(true)}
             openVoiceModal={() => setIsVoiceModalOpen(true)}
             openInstallModal={() => setIsInstallModalOpen(true)}
+            onLockApp={() => setIsLocked(true)}
             darkMode={darkMode}
             onStartFocusBrief={handleStartFocusBrief}
           />
@@ -424,6 +442,7 @@ export default function App() {
             openVoiceModal={() => setIsVoiceModalOpen(true)}
             openNotificationDrawer={() => setIsNotificationDrawerOpen(true)}
             openInstallModal={() => setIsInstallModalOpen(true)}
+            onLockApp={() => setIsLocked(true)}
             unreadNotifsCount={unreadNotifsCount}
             voiceSettings={appData.voiceSettings}
             setVoiceSettings={(updater) => {
