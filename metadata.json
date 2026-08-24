@@ -1,0 +1,6 @@
+{
+  "name": "Productivity & Finance Tracker",
+  "description": "Aplikasi pelacak produktivitas dan keuangan pribadi lengkap dengan grafik mingguan, pengingat suara personal, notifikasi tenggat waktu, integrasi kalender, dan sinkronisasi lintas perangkat real-time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

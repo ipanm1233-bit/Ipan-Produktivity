@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "rooms": {
+      "title": "Sync Room",
+      "description": "Real-time sync data across devices",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string" },
+        "tasks": { "type": "array" },
+        "transactions": { "type": "array" },
+        "taskCategories": { "type": "array" },
+        "financeCategories": { "type": "array" },
+        "monthlyBudget": { "type": "object" },
+        "voiceSettings": { "type": "object" },
+        "notifications": { "type": "array" },
+        "theme": { "type": "string" },
+        "lastUpdated": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["roomId", "lastUpdated"]
+    },
+    "notifications": {
+      "title": "Push Notification Log",
+      "description": "Notification history and alerts for deadlines and budget",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "roomId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "roomId", "title", "message", "timestamp"]
+    }
+  }
+}
