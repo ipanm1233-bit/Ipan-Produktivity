@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -21,7 +21,12 @@ import {
   Banknote,
   Smartphone,
   Calendar,
-  Sparkles
+  Sparkles,
+  Zap,
+  RotateCcw,
+  Layers,
+  Calculator,
+  Check
 } from 'lucide-react';
 import { 
   PieChart, 
@@ -35,6 +40,12 @@ import {
   YAxis 
 } from 'recharts';
 import { Transaction, FinanceCategory, MonthlyBudgetConfig } from '../../types';
+import { 
+  calculateAutoCategoryBudgets, 
+  calculateFromHistoricalSpending, 
+  BUDGET_PRESETS, 
+  BudgetDistributionPreset 
+} from '../../utils/budgetCalculator';
 
 interface FinanceDashboardProps {
   transactions: Transaction[];
@@ -70,6 +81,8 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
   const [tempCategoryBudgets, setTempCategoryBudgets] = useState<Record<string, number>>(
     budgetConfig.categoryBudgets || {}
   );
+  const [autoDistributeEnabled, setAutoDistributeEnabled] = useState(true);
+  const [selectedPreset, setSelectedPreset] = useState<BudgetDistributionPreset>('smart_balanced');
 
   // Filter transactions by month
   const monthTransactions = transactions.filter((t) => t.date.startsWith(selectedMonth));
@@ -108,6 +121,49 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
 
   // Category expense breakdown for charts
   const expenseCategories = categories.filter((c) => c.type === 'expense');
+
+  // Helper to trigger recalculation
+  const handleAutoDistribute = (
+    total: number, 
+    preset: BudgetDistributionPreset = selectedPreset,
+    useHistory = false
+  ) => {
+    if (useHistory) {
+      const calculated = calculateFromHistoricalSpending(total, expenseCategories, transactions);
+      setTempCategoryBudgets(calculated);
+    } else {
+      const calculated = calculateAutoCategoryBudgets(total, expenseCategories, preset);
+      setTempCategoryBudgets(calculated);
+    }
+  };
+
+  // When total budget input changes
+  const handleTotalBudgetChange = (newTotal: number) => {
+    setTempTotalBudget(newTotal);
+    if (autoDistributeEnabled) {
+      handleAutoDistribute(newTotal, selectedPreset);
+    }
+  };
+
+  // Open modal with fresh state
+  const handleOpenBudgetModal = () => {
+    const total = budgetConfig.totalBudget;
+    setTempTotalBudget(total);
+    setTempThreshold(budgetConfig.alertThresholdPercent || 80);
+    
+    // Check if category budgets exist, otherwise auto calculate
+    const existing = budgetConfig.categoryBudgets || {};
+    const hasExistingBudgets = Object.values(existing).some((v) => Number(v) > 0);
+    if (hasExistingBudgets) {
+      setTempCategoryBudgets(existing);
+    } else if (total > 0) {
+      const calculated = calculateAutoCategoryBudgets(total, expenseCategories, 'smart_balanced');
+      setTempCategoryBudgets(calculated);
+    } else {
+      setTempCategoryBudgets({});
+    }
+    setIsSettingBudget(true);
+  };
   const categoryExpenseData = expenseCategories.map((cat) => {
     const sum = monthTransactions
       .filter((t) => t.type === 'expense' && t.category === cat.id)
@@ -188,7 +244,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
           {/* Setting Budget Target Button */}
           <button
             id="open-budget-settings-btn"
-            onClick={() => setIsSettingBudget(true)}
+            onClick={handleOpenBudgetModal}
             className="clay-button p-2.5 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-extrabold flex items-center space-x-1.5 text-[#5A453A] dark:text-[#D4C7BC]"
           >
             <Sliders className="w-4 h-4 text-orange-600 dark:text-orange-400" />
@@ -414,7 +470,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
               <span>Batas Anggaran per Kategori</span>
             </h3>
             <button
-              onClick={() => setIsSettingBudget(true)}
+              onClick={handleOpenBudgetModal}
               className="text-xs text-orange-600 dark:text-orange-400 hover:underline font-extrabold"
             >
               Ubah Limit
@@ -603,36 +659,328 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
         </div>
       </div>
 
-      {/* Modal: Set Monthly Budget & Category Budgets */}
+      {/* Modal: Set Monthly Budget with Auto-Calculation & Distribution */}
       {isSettingBudget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-lg clay-modal p-6 transition my-8">
-            <h3 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] mb-1">Pengaturan Batas Anggaran Bulanan</h3>
-            <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mb-4 font-medium">
-              Tentukan target maksimal pengeluaran bulanan dan batas per kategori untuk sistem notifikasi otomatis.
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-xl clay-modal p-5 sm:p-6 transition my-6 shadow-2xl border border-white/40 dark:border-white/10">
+            
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-[#E8DACB] dark:border-white/10 mb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-11 h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/70 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner flex-shrink-0">
+                  <Calculator className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-[#3E2F26] dark:text-[#FAF4EE]">
+                    Pengaturan Anggaran & Pembagian Otomatis
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium">
+                    Masukkan total anggaran; sistem akan otomatis membagi dan menghitung besaran dana tiap pos pengeluaran.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="space-y-4 max-h-[72vh] overflow-y-auto pr-1">
               
-              {/* Total Monthly Budget */}
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider mb-1.5 text-[#8A796E] dark:text-[#BDB0A4]">
-                  Target Total Anggaran Bulanan (Rp)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={tempTotalBudget}
-                  onChange={(e) => setTempTotalBudget(Number(e.target.value))}
-                  className="w-full px-4 py-3 clay-input text-sm font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none"
-                />
+              {/* Total Monthly Budget Input & Quick Buttons */}
+              <div className="p-4 rounded-2xl bg-[#EDE0D2]/70 dark:bg-[#1E1A17] border border-[#D8C7B8] dark:border-white/5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#3E2F26] dark:text-[#FAF4EE]">
+                    Target Total Anggaran Bulanan
+                  </label>
+                  <span className="text-xs font-black text-orange-600 dark:text-orange-400">
+                    Rp {Number(tempTotalBudget || 0).toLocaleString('id-ID')}
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-orange-600 dark:text-orange-400">
+                    Rp
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="50000"
+                    placeholder="Contoh: 5000000"
+                    value={tempTotalBudget || ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Number(e.target.value);
+                      handleTotalBudgetChange(val);
+                    }}
+                    className="w-full pl-11 pr-4 py-3 clay-input text-base sm:text-lg font-black text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none"
+                  />
+                </div>
+
+                {/* Quick Budget Chips */}
+                <div className="flex items-center flex-wrap gap-1.5 pt-1">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] mr-1">
+                    Pilihan Cepat:
+                  </span>
+                  {[
+                    { label: 'Rp 2 Jt', val: 2000000 },
+                    { label: 'Rp 3.5 Jt', val: 3500000 },
+                    { label: 'Rp 5 Jt', val: 5000000 },
+                    { label: 'Rp 7.5 Jt', val: 7500000 },
+                    { label: 'Rp 10 Jt', val: 10000000 },
+                    { label: 'Rp 15 Jt', val: 15000000 },
+                  ].map((chip) => (
+                    <button
+                      key={chip.val}
+                      type="button"
+                      onClick={() => handleTotalBudgetChange(chip.val)}
+                      className={`px-2.5 py-1 rounded-xl text-[11px] font-black transition ${
+                        tempTotalBudget === chip.val
+                          ? 'clay-button-primary shadow-sm'
+                          : 'clay-button text-[#5A453A] dark:text-[#D4C7BC]'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Threshold percent */}
-              <div>
-                <label className="block text-xs font-extrabold uppercase tracking-wider mb-1.5 text-[#8A796E] dark:text-[#BDB0A4]">
-                  Ambang Batas Peringatan Notifikasi (% Terpakai)
-                </label>
+              {/* Smart Auto Distribution Model Selection */}
+              <div className="p-4 rounded-2xl bg-[#F0E4D7] dark:bg-[#1A1715] border border-orange-200/60 dark:border-orange-900/30 space-y-3 shadow-inner">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <span className="text-xs font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
+                      Model Pembagian Cerdas Otomatis
+                    </span>
+                  </div>
+
+                  {/* Auto-calculate checkbox */}
+                  <label className="flex items-center space-x-2 cursor-pointer text-xs font-bold text-[#6B5A4E] dark:text-[#BDB0A4]">
+                    <input
+                      type="checkbox"
+                      checked={autoDistributeEnabled}
+                      onChange={(e) => setAutoDistributeEnabled(e.target.checked)}
+                      className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 accent-orange-600 cursor-pointer"
+                    />
+                    <span className="text-[11px]">Hitung otomatis saat ketik</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {BUDGET_PRESETS.map((preset) => {
+                    const isSelected = selectedPreset === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPreset(preset.id);
+                          handleAutoDistribute(tempTotalBudget, preset.id);
+                        }}
+                        className={`flex flex-col items-center justify-center p-2.5 rounded-xl text-center transition-all ${
+                          isSelected
+                            ? 'clay-button-primary scale-[1.02] shadow-sm'
+                            : 'clay-button opacity-75 hover:opacity-100 text-[#3E2F26] dark:text-[#FAF4EE]'
+                        }`}
+                      >
+                        <span className="text-xs font-black truncate w-full">{preset.badge}</span>
+                        <span className={`text-[9px] font-semibold truncate w-full ${isSelected ? 'text-white/90' : 'text-[#8A796E] dark:text-[#A8988D]'}`}>
+                          {preset.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Option to use historical spending if transactions exist */}
+                {transactions.some((t) => t.type === 'expense') && (
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleAutoDistribute(tempTotalBudget, selectedPreset, true)}
+                      className="text-[11px] font-extrabold text-orange-600 dark:text-orange-400 hover:underline flex items-center space-x-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 inline" />
+                      <span>Bagi Proporsional Berdasarkan Riwayat Transaksi Nyata</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutoDistribute(tempTotalBudget, selectedPreset)}
+                      className="clay-button px-3 py-1.5 rounded-xl text-[10px] font-black text-orange-600 dark:text-orange-400 flex items-center space-x-1"
+                    >
+                      <Zap className="w-3 h-3" />
+                      <span>Bagi Ulang</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Live Allocation Summary Progress Bar */}
+              {(() => {
+                const totalAllocated = expenseCategories.reduce(
+                  (sum, c) => sum + (tempCategoryBudgets[c.id] || 0),
+                  0
+                );
+                const target = tempTotalBudget || 0;
+                const allocatedPercent = target > 0 ? (totalAllocated / target) * 100 : 0;
+                const diff = target - totalAllocated;
+                const isExact = diff === 0 && target > 0;
+                const isOver = diff < 0;
+
+                return (
+                  <div className="p-3.5 rounded-2xl bg-[#EDE0D2]/50 dark:bg-[#201C19] border border-[#D8C7B8]/60 dark:border-white/5 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-[#8A796E] dark:text-[#BDB0A4]">
+                        Total Terbagi ke Kategori:
+                      </span>
+                      <div className="text-right">
+                        <span className={`font-black ${isOver ? 'text-rose-600' : isExact ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#3E2F26] dark:text-[#FAF4EE]'}`}>
+                          Rp {totalAllocated.toLocaleString('id-ID')}
+                        </span>
+                        <span className="text-[10px] text-[#8A796E] ml-1">
+                          ({allocatedPercent.toFixed(0)}%)
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-[#E5D7CA] dark:bg-[#2A231F] h-2.5 rounded-full overflow-hidden shadow-inner">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isOver ? 'bg-rose-600' : isExact ? 'bg-emerald-500' : 'bg-orange-500'
+                        }`}
+                        style={{ width: `${Math.min(100, allocatedPercent)}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px]">
+                      {isExact ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center space-x-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>100% Sempurna Teralokasikan</span>
+                        </span>
+                      ) : isOver ? (
+                        <span className="text-rose-600 font-extrabold flex items-center space-x-1">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <span>Melebihi target Rp {Math.abs(diff).toLocaleString('id-ID')}</span>
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400 font-extrabold">
+                          Sisa belum terbagi: Rp {diff.toLocaleString('id-ID')}
+                        </span>
+                      )}
+                      
+                      <span className="text-[10px] text-[#8A796E] font-medium">
+                        Target: Rp {target.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Per-Category Calculated Amounts */}
+              <div className="space-y-2.5 pt-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#8A796E] dark:text-[#BDB0A4]">
+                    Rincian Pembagian per Kategori Pengeluaran
+                  </label>
+                  <span className="text-[10px] text-[#8A796E] font-semibold">
+                    (Bisa disesuaikan manual)
+                  </span>
+                </div>
+
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {expenseCategories.map((c) => {
+                    const currentAmt = tempCategoryBudgets[c.id] || 0;
+                    const catPercent = tempTotalBudget > 0 ? (currentAmt / tempTotalBudget) * 100 : 0;
+
+                    return (
+                      <div
+                        key={c.id}
+                        className="p-3 rounded-2xl bg-[#FAF3EC] dark:bg-[#201C19] border border-white/70 dark:border-white/5 space-y-2 shadow-sm transition hover:border-orange-300 dark:hover:border-orange-800"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center space-x-2.5 min-w-0">
+                            <span
+                              className="w-3.5 h-3.5 rounded-full flex-shrink-0 shadow-sm"
+                              style={{ backgroundColor: c.color }}
+                            />
+                            <span className="font-black text-xs text-[#3E2F26] dark:text-[#FAF4EE] truncate">
+                              {c.name}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            {/* Percentage badge */}
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[10px] font-black border shadow-sm"
+                              style={{
+                                backgroundColor: `${c.color}15`,
+                                borderColor: `${c.color}35`,
+                                color: c.color,
+                              }}
+                            >
+                              {catPercent.toFixed(0)}%
+                            </span>
+
+                            {/* Direct Rupiah Input */}
+                            <div className="relative w-36 sm:w-44">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#8A796E]">
+                                Rp
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="10000"
+                                placeholder="0"
+                                value={tempCategoryBudgets[c.id] !== undefined ? tempCategoryBudgets[c.id] : ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? 0 : Number(e.target.value);
+                                  setTempCategoryBudgets({
+                                    ...tempCategoryBudgets,
+                                    [c.id]: val,
+                                  });
+                                }}
+                                className="w-full pl-8 pr-2.5 py-1.5 clay-input text-xs font-black text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none text-right"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Interactive percentage quick slider */}
+                        {tempTotalBudget > 0 && (
+                          <div className="flex items-center space-x-2 pt-0.5">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={Math.min(100, Math.round(catPercent))}
+                              onChange={(e) => {
+                                const newPct = Number(e.target.value);
+                                const newAmt = Math.round(((tempTotalBudget * newPct) / 100) / 5000) * 5000;
+                                setTempCategoryBudgets({
+                                  ...tempCategoryBudgets,
+                                  [c.id]: newAmt,
+                                });
+                              }}
+                              className="w-full accent-orange-600 cursor-pointer h-1.5 bg-[#E5D7CA] dark:bg-[#2A231F] rounded-lg"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Notification Threshold */}
+              <div className="pt-3 border-t border-[#E8DACB] dark:border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-wider text-[#8A796E] dark:text-[#BDB0A4]">
+                    Ambang Batas Peringatan Notifikasi (% Terpakai)
+                  </label>
+                  <span className="font-black text-sm text-orange-600 dark:text-orange-400">
+                    {tempThreshold}%
+                  </span>
+                </div>
                 <div className="flex items-center space-x-3">
                   <input
                     type="range"
@@ -643,65 +991,33 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                     onChange={(e) => setTempThreshold(Number(e.target.value))}
                     className="flex-1 accent-orange-600 cursor-pointer"
                   />
-                  <span className="font-black text-sm w-12 text-center text-orange-600 dark:text-orange-400">{tempThreshold}%</span>
                 </div>
-                <p className="text-[11px] text-[#8A796E] dark:text-[#A8988D] mt-1 font-medium">
-                  Sistem akan mengirim push notification & pengingat suara saat pengeluaran menyentuh {tempThreshold}%.
+                <p className="text-[10px] text-[#8A796E] dark:text-[#A8988D] font-medium">
+                  Sistem akan mengirim push notification & pengingat suara di HP saat pengeluaran menyentuh {tempThreshold}%.
                 </p>
-              </div>
-
-              {/* Category Budgets */}
-              <div className="pt-3 border-t border-[#E8DACB] dark:border-white/10">
-                <label className="block text-xs font-extrabold uppercase tracking-wider mb-2 text-[#8A796E] dark:text-[#BDB0A4]">
-                  Batas Maksimal per Kategori (Opsional)
-                </label>
-                <div className="space-y-2">
-                  {expenseCategories.map((c) => (
-                    <div key={c.id} className="flex items-center justify-between space-x-2 text-xs">
-                      <div className="flex items-center space-x-2 w-40">
-                        <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: c.color }} />
-                        <span className="truncate font-bold text-[#3E2F26] dark:text-[#FAF4EE]">{c.name}</span>
-                      </div>
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A796E] text-xs font-extrabold">Rp</span>
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={tempCategoryBudgets[c.id] || ''}
-                          onChange={(e) => {
-                            const val = e.target.value === '' ? 0 : Number(e.target.value);
-                            setTempCategoryBudgets({
-                              ...tempCategoryBudgets,
-                              [c.id]: val,
-                            });
-                          }}
-                          className="w-full pl-9 pr-3 py-2 clay-input text-xs font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
 
             </div>
 
+            {/* Modal Actions */}
             <div className="flex items-center justify-end space-x-3 pt-4 border-t border-[#E8DACB] dark:border-white/10 mt-4">
               <button
                 type="button"
                 onClick={() => setIsSettingBudget(false)}
-                className="clay-button px-4 py-2 rounded-2xl text-xs font-bold text-[#8A796E] dark:text-[#D4C7BC]"
+                className="clay-button px-4 py-2.5 rounded-2xl text-xs font-bold text-[#8A796E] dark:text-[#D4C7BC]"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleSaveBudgetConfig}
-                className="clay-button-primary px-5 py-2.5 rounded-2xl text-xs font-extrabold"
+                className="clay-button-primary px-6 py-2.5 rounded-2xl text-xs font-black flex items-center space-x-1.5 shadow-lg shadow-orange-500/20"
               >
-                Simpan Anggaran
+                <Check className="w-4 h-4" />
+                <span>Simpan Anggaran</span>
               </button>
             </div>
+
           </div>
         </div>
       )}
@@ -709,4 +1025,5 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
     </div>
   );
 };
+
 

@@ -455,7 +455,7 @@ export default function App() {
       darkMode ? 'bg-[#181513] text-[#FAF4EE]' : 'bg-[#F5EBE1] text-[#3E2F26]'
     }`}>
       
-      <div className="max-w-[1440px] mx-auto p-2.5 sm:p-4 md:p-5 lg:p-6 flex flex-col md:flex-row gap-3.5 sm:gap-4 lg:gap-6 items-start">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-4 md:px-5 lg:px-6 pt-[calc(env(safe-area-inset-top,0px)+0.6rem)] sm:pt-4 md:pt-5 lg:pt-6 pb-6 flex flex-col md:flex-row gap-3.5 sm:gap-4 lg:gap-6 items-start">
         
         {/* LEFT 3D CLAY SIDEBAR (Desktop/Tablet) */}
         <div className="hidden md:block sticky top-6">

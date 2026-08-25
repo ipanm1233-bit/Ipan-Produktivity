@@ -94,9 +94,15 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
   }, [pin]);
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 select-none ${
-      darkMode ? 'bg-[#181513]' : 'bg-[#F5EBE1]'
-    }`}>
+    <div 
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)',
+      }}
+      className={`fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto select-none ${
+        darkMode ? 'bg-[#181513]' : 'bg-[#F5EBE1]'
+      }`}
+    >
       
       {/* Background soft ambient glowing circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

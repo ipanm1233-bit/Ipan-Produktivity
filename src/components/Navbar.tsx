@@ -75,11 +75,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className={`sticky top-2 sm:top-4 z-30 transition-colors duration-200 py-2.5 sm:py-3.5 px-3 sm:px-5 mb-3.5 rounded-2xl sm:rounded-3xl border ${
-      darkMode 
-        ? 'bg-[#1F1B18]/95 border-white/10 shadow-[0_8px_24px_rgba(0,0,0,0.5)] backdrop-blur-xl' 
-        : 'bg-[#FAF3EC]/95 border-white/80 shadow-[0_8px_24px_rgba(186,163,143,0.22)] backdrop-blur-xl'
-    }`}>
+    <header 
+      style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.65rem)' }}
+      className={`sticky z-30 transition-all duration-200 py-3 sm:py-3.5 px-3.5 sm:px-5 mb-3.5 sm:mb-4 rounded-[22px] sm:rounded-3xl border ${
+        darkMode 
+          ? 'bg-[#1F1B18]/95 border-white/10 shadow-[0_10px_28px_rgba(0,0,0,0.55)] backdrop-blur-xl' 
+          : 'bg-[#FAF3EC]/95 border-white/85 shadow-[0_10px_28px_rgba(186,163,143,0.25)] backdrop-blur-xl'
+      }`}
+    >
       <div className="w-full flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 md:gap-3">
         
         {/* Top/Left Row: App Logo & View Title & Mobile Actions */}
