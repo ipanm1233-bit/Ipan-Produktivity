@@ -20,7 +20,9 @@ export interface Task {
   category: string; // category id or name
   priority: PriorityLevel;
   dueDate: string; // ISO string e.g. "2026-08-25T14:00"
-  reminderMinutesBefore: number; // 0, 5, 15, 30, 60, 1440
+  reminderMinutesBefore?: number; // 0, 5, 10, 15, 30, 60, 1440
+  reminderStages?: number[]; // Multi-stage reminder countdown: e.g. [30, 10, 5, 0] (30m, 10m, 5m, at deadline)
+  notifiedStages?: number[]; // Stages that have already fired for this task
   completed: boolean;
   completedAt?: string;
   createdAt: string;
@@ -64,6 +66,20 @@ export interface MonthlyBudgetConfig {
   alertThresholdPercent: number; // default 80
 }
 
+export interface CharacterAvatarConfig {
+  url?: string;
+  presetId?: string;
+  name?: string;
+  isTransparent?: boolean;
+  isGif?: boolean;
+  scale?: number; // 0.8 to 1.5
+  flipHorizontal?: boolean;
+  showPodium?: boolean;
+  animationStyle?: 'float' | 'bounce' | 'pulse' | 'gentle' | 'none';
+  glowColor?: 'orange' | 'emerald' | 'cyan' | 'purple' | 'amber' | 'none';
+  mode?: 'transparent_cutout' | 'studio_frame';
+}
+
 export interface VoiceSettings {
   enabled: boolean;
   voiceURI?: string;
@@ -76,6 +92,7 @@ export interface VoiceSettings {
   customTemplate?: string;
   financeAlertsEnabled: boolean;
   taskAlertsEnabled: boolean;
+  characterAvatar?: CharacterAvatarConfig;
 }
 
 export interface NotificationItem {
@@ -95,6 +112,7 @@ export interface AppSyncData {
   financeCategories: FinanceCategory[];
   monthlyBudget: MonthlyBudgetConfig;
   voiceSettings: VoiceSettings;
+  characterAvatar?: CharacterAvatarConfig;
   notifications: NotificationItem[];
   theme: 'dark' | 'light' | 'system';
   lastUpdated: number;

@@ -237,28 +237,28 @@ export const TaskList: React.FC<TaskListProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* 3D Clay Bento Grid Header & Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+      {/* 3D Clay Bento Grid Header & Statistics (Symmetrical & Adaptive Grid) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-3.5 sm:gap-4">
         
-        {/* Bento Card 1: Today's Focus (Col span 4) */}
-        <div className="md:col-span-4 p-5 sm:p-6 clay-card flex flex-col justify-between relative overflow-hidden">
+        {/* Bento Card 1: Today's Focus (Col span 4 on XL) */}
+        <div className="xl:col-span-4 p-4.5 sm:p-5 clay-card flex flex-col justify-between relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center space-x-1.5">
               <Target className="w-4 h-4" />
               <span>Target Hari Ini</span>
             </span>
-            <span className="clay-badge text-[10px] px-2.5 py-1 font-extrabold text-[#7D6B5E] dark:text-[#C5B7AD]">
+            <span className="clay-badge text-[10px] px-2 py-0.5 font-extrabold text-[#7D6B5E] dark:text-[#C5B7AD]">
               {todayStr}
             </span>
           </div>
 
-          <div className="my-4">
+          <div className="my-3">
             <div className="flex items-baseline space-x-2">
-              <span className="text-4xl font-extrabold tracking-tight text-[#3E2F26] dark:text-[#FAF4EE]">{todayCompleted}</span>
-              <span className="text-xl font-bold text-[#A8988D]">/ {todayTasks.length}</span>
+              <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#3E2F26] dark:text-[#FAF4EE]">{todayCompleted}</span>
+              <span className="text-lg sm:text-xl font-bold text-[#A8988D]">/ {todayTasks.length}</span>
               <span className="text-xs font-bold text-[#8A796E] dark:text-[#BDB0A4] ml-1">tugas selesai</span>
             </div>
-            <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mt-1.5 leading-relaxed">
+            <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mt-1 leading-relaxed">
               {todayTasks.length === 0 
                 ? 'Belum ada agenda tugas untuk hari ini.' 
                 : todayCompleted === todayTasks.length 
@@ -267,7 +267,7 @@ export const TaskList: React.FC<TaskListProps> = ({
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5 mt-2">
             <div className="w-full bg-[#EADCCF] dark:bg-[#2F2925] h-2.5 rounded-full overflow-hidden shadow-inner">
               <div 
                 className="bg-gradient-to-r from-orange-500 to-amber-500 h-full rounded-full transition-all duration-500 shadow-md" 
@@ -281,15 +281,15 @@ export const TaskList: React.FC<TaskListProps> = ({
           </div>
         </div>
 
-        {/* Bento Card 2: Voice AI Companion Briefing (Col span 5) */}
-        <div className="md:col-span-5 p-5 sm:p-6 clay-card flex flex-col justify-between relative overflow-hidden bg-gradient-to-br from-[#FAF3EC] via-[#F4E8DC] to-[#F1DFC9] dark:from-[#211D1A] dark:via-[#26201B] dark:to-[#2B211A]">
+        {/* Bento Card 2: Voice AI Companion Briefing (Col span 5 on XL) */}
+        <div className="xl:col-span-5 p-4.5 sm:p-5 clay-card flex flex-col justify-between relative overflow-hidden bg-gradient-to-br from-[#FAF3EC] via-[#F4E8DC] to-[#F1DFC9] dark:from-[#211D1A] dark:via-[#26201B] dark:to-[#2B211A]">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center space-x-1.5">
                 <Sparkles className="w-4 h-4" />
                 <span>Pengingat Suara Personal</span>
               </span>
-              <span className={`text-[10px] px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider shadow-sm ${
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider shadow-sm ${
                 voiceSettings.enabled 
                   ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800' 
                   : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700'
@@ -298,7 +298,7 @@ export const TaskList: React.FC<TaskListProps> = ({
               </span>
             </div>
 
-            <h3 className="text-base font-extrabold mb-1 text-[#3E2F26] dark:text-[#FAF4EE]">
+            <h3 className="text-sm sm:text-base font-extrabold mb-1 text-[#3E2F26] dark:text-[#FAF4EE]">
               Halo, <span className="text-orange-600 dark:text-orange-400">{voiceSettings.userName || 'Ipan'}</span>! 👋
             </h3>
             <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] leading-relaxed line-clamp-2">
@@ -309,56 +309,56 @@ export const TaskList: React.FC<TaskListProps> = ({
             </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-[#E8DACB] dark:border-white/10 flex items-center justify-between">
+          <div className="mt-3 pt-2.5 border-t border-[#E8DACB] dark:border-white/10 flex items-center justify-between gap-2">
             <button
               onClick={handleSpeakDailyBriefing}
-              className="clay-button-primary flex items-center space-x-2 px-4 py-2 rounded-2xl text-xs font-extrabold"
+              className="clay-button-primary flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-extrabold active:scale-95 transition"
             >
-              <Volume2 className="w-4 h-4" />
-              <span>Dengarkan Ringkasan Suara</span>
+              <Volume2 className="w-3.5 h-3.5" />
+              <span>Dengarkan Ringkasan</span>
             </button>
-            <span className="text-[11px] text-[#8A796E] dark:text-[#A8988D] font-bold capitalize">
+            <span className="text-[10px] text-[#8A796E] dark:text-[#A8988D] font-bold capitalize">
               Gaya: {voiceSettings.style || 'Motivasi'}
             </span>
           </div>
         </div>
 
-        {/* Bento Card 3: Key Metrics Quick Stack (Col span 3) */}
-        <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-1 gap-4">
+        {/* Bento Card 3: Key Metrics Quick Stack (Col span 3 on XL, or 2 cols on mobile/tablet) */}
+        <div className="sm:col-span-2 xl:col-span-3 grid grid-cols-2 xl:grid-cols-1 gap-3.5">
           
           {/* Completion Rate Pill */}
-          <div className="p-4 clay-card-sm flex items-center justify-between">
-            <div>
+          <div className="p-3.5 sm:p-4 clay-card-sm flex items-center justify-between">
+            <div className="min-w-0">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">Total Selesai</span>
-              <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{completionRate}%</div>
-              <span className="text-[11px] font-bold text-[#8A796E] dark:text-[#A8988D]">{completedTasks} dari {totalTasks} tugas</span>
+              <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">{completionRate}%</div>
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#8A796E] dark:text-[#A8988D] truncate block">{completedTasks} dari {totalTasks} tugas</span>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shadow-inner">
-              <CheckSquare className="w-5 h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shadow-inner flex-shrink-0 ml-1.5">
+              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
 
           {/* Attention / Streak Pill */}
-          <div className={`p-4 clay-card-sm flex items-center justify-between ${
+          <div className={`p-3.5 sm:p-4 clay-card-sm flex items-center justify-between ${
             overdueTasks.length > 0 ? 'bg-[#FFF2F2] dark:bg-[#2C191C]' : ''
           }`}>
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block">
+            <div className="min-w-0">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#A8988D] block truncate">
                 {overdueTasks.length > 0 ? 'Perlu Perhatian' : 'Fokus Streak'}
               </span>
-              <div className={`text-2xl font-extrabold mt-0.5 ${overdueTasks.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
+              <div className={`text-xl sm:text-2xl font-extrabold mt-0.5 truncate ${overdueTasks.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
                 {overdueTasks.length > 0 ? `${overdueTasks.length} Terlewat` : `${streakDays} Hari 🔥`}
               </div>
-              <span className="text-[11px] font-bold text-[#8A796E] dark:text-[#A8988D]">
+              <span className="text-[10px] sm:text-[11px] font-bold text-[#8A796E] dark:text-[#A8988D] truncate block">
                 {overdueTasks.length > 0 ? `${urgentTasks.length} mendesak` : 'Fokus konsisten!'}
               </span>
             </div>
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-inner ${
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border shadow-inner flex-shrink-0 ml-1.5 ${
               overdueTasks.length > 0
                 ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800'
                 : 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'
             }`}>
-              {overdueTasks.length > 0 ? <AlertTriangle className="w-5 h-5" /> : <Flame className="w-5 h-5" />}
+              {overdueTasks.length > 0 ? <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" /> : <Flame className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
           </div>
 
@@ -367,30 +367,30 @@ export const TaskList: React.FC<TaskListProps> = ({
       </div>
 
       {/* Bento Controls Bar: Search, Category Filters, & Actions */}
-      <div className="p-4 sm:p-5 clay-card">
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <div className="p-3.5 sm:p-5 clay-card w-full overflow-hidden">
+        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between">
           
           {/* 3D Inset Search Input */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8A796E] dark:text-[#A8988D]" />
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8A796E] dark:text-[#A8988D]" />
             <input
               id="search-tasks-input"
               type="text"
               placeholder="Cari tugas, subtugas, atau catatan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 clay-input-pill text-xs sm:text-sm font-semibold text-[#3E2F26] dark:text-[#FAF4EE] placeholder-[#A8988D] focus:outline-none transition"
+              className="w-full pl-10 pr-3.5 py-2.5 clay-input-pill text-xs sm:text-sm font-semibold text-[#3E2F26] dark:text-[#FAF4EE] placeholder-[#A8988D] focus:outline-none transition"
             />
           </div>
 
-          {/* Category Filter & Actions */}
-          <div className="flex items-center space-x-2.5">
-            <div className="flex items-center space-x-1.5">
-              <Filter className="w-4 h-4 text-[#8A796E] dark:text-[#A8988D]" />
+          {/* Category Filter & Actions (Mobile Responsive & Symmetric) */}
+          <div className="flex items-center gap-2 w-full md:w-auto flex-wrap sm:flex-nowrap">
+            <div className="flex items-center space-x-1.5 flex-1 sm:flex-initial min-w-[130px]">
+              <Filter className="w-4 h-4 text-[#8A796E] dark:text-[#A8988D] flex-shrink-0" />
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3.5 py-2.5 clay-button rounded-2xl text-xs sm:text-sm font-bold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none cursor-pointer"
+                className="w-full px-3 py-2.5 clay-button rounded-2xl text-xs sm:text-sm font-bold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none cursor-pointer"
               >
                 <option value="all">Semua Kategori</option>
                 {categories.map((cat) => (
@@ -405,7 +405,7 @@ export const TaskList: React.FC<TaskListProps> = ({
             <button
               onClick={() => downloadIcsCalendar(tasks, 'semua-jadwal-tugas.ics')}
               title="Ekspor Seluruh Jadwal ke Format Kalender (.ICS)"
-              className="clay-button p-2.5 rounded-2xl text-xs font-bold text-[#6B5A4E] dark:text-[#D4C7BC] flex items-center space-x-1.5"
+              className="clay-button p-2.5 rounded-2xl text-xs font-bold text-[#6B5A4E] dark:text-[#D4C7BC] flex items-center justify-center space-x-1.5 flex-shrink-0"
             >
               <Download className="w-4 h-4 text-orange-600 dark:text-orange-400" />
               <span className="hidden sm:inline">Ekspor .ICS</span>
@@ -415,16 +415,16 @@ export const TaskList: React.FC<TaskListProps> = ({
             <button
               id="add-task-main-cta-btn"
               onClick={onOpenNewTaskModal}
-              className="clay-button-primary flex items-center space-x-2 px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold whitespace-nowrap"
+              className="clay-button-primary flex-1 sm:flex-initial flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold whitespace-nowrap min-w-[120px]"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 flex-shrink-0" />
               <span>Tambah Tugas</span>
             </button>
           </div>
         </div>
 
         {/* 3D Filter Pills */}
-        <div className="flex items-center space-x-2 mt-4 pt-3 border-t border-[#E8DACB] dark:border-white/10 overflow-x-auto pb-1">
+        <div className="flex items-center space-x-2 mt-3.5 pt-3 border-t border-[#E8DACB] dark:border-white/10 overflow-x-auto pb-1 max-w-full">
           {[
             { id: 'all', label: 'Semua Tugas', count: totalTasks },
             { id: 'today', label: 'Hari Ini', count: todayTasks.length },

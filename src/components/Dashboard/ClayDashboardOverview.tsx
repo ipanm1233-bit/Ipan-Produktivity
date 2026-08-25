@@ -5,7 +5,8 @@ import {
   TaskCategory, 
   FinanceCategory, 
   MonthlyBudgetConfig, 
-  VoiceSettings 
+  VoiceSettings,
+  CharacterAvatarConfig
 } from '../../types';
 import { 
   CheckCircle2, 
@@ -28,11 +29,17 @@ import {
   Zap,
   Tag,
   Image as ImageIcon,
-  Square
+  Square,
+  Upload,
+  Camera,
+  RotateCw,
+  Film
 } from 'lucide-react';
 import { speakText, playChime, stopSpeaking } from '../../utils/audio';
 import clayAvatarBg from '../../assets/images/clay_avatar_bg_1787581636772.jpg';
 import clayAvatarCutout from '../../assets/images/clay_avatar_cutout_1787581662245.jpg';
+import { CharacterCustomizerModal } from './CharacterCustomizerModal';
+import { DEFAULT_CHARACTER_CONFIG } from '../../data/characterPresets';
 
 interface ClayDashboardOverviewProps {
   tasks: Task[];
@@ -41,6 +48,8 @@ interface ClayDashboardOverviewProps {
   financeCategories: FinanceCategory[];
   budgetConfig: MonthlyBudgetConfig;
   voiceSettings: VoiceSettings;
+  characterConfig?: CharacterAvatarConfig;
+  onSaveCharacterConfig?: (config: CharacterAvatarConfig) => void;
   onToggleTaskComplete: (id: string) => void;
   onOpenNewTaskModal: () => void;
   onOpenNewTxModal: () => void;
@@ -55,6 +64,8 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
   financeCategories,
   budgetConfig,
   voiceSettings,
+  characterConfig = DEFAULT_CHARACTER_CONFIG,
+  onSaveCharacterConfig,
   onToggleTaskComplete,
   onOpenNewTaskModal,
   onOpenNewTxModal,
@@ -63,7 +74,33 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
 }) => {
   const [isPlayingBrief, setIsPlayingBrief] = useState(false);
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
-  const [avatarMode, setAvatarMode] = useState<'desk' | 'cutout'>('desk');
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [isHoveredAvatar, setIsHoveredAvatar] = useState(false);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+
+  // Character config values with fallback
+  const charUrl = characterConfig.url || DEFAULT_CHARACTER_CONFIG.url;
+  const charScale = characterConfig.scale ?? DEFAULT_CHARACTER_CONFIG.scale;
+  const charFlip = characterConfig.flipHorizontal ?? false;
+  const charPodium = characterConfig.showPodium ?? true;
+  const charAnim = characterConfig.animationStyle || 'float';
+  const charGlow = (characterConfig.glowColor ?? 'orange') as 'orange' | 'emerald' | 'cyan' | 'purple' | 'amber' | 'none';
+  const charMode = characterConfig.mode || 'transparent_cutout';
+  const isGif = characterConfig.isGif ?? false;
+  const isTransparent = characterConfig.isTransparent ?? true;
+
+  // Mouse tilt tracking for 3D parallax pop-out effect
+  const handleAvatarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ x: x * 20, y: -y * 20 });
+  };
+
+  const handleAvatarMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+    setIsHoveredAvatar(false);
+  };
 
   // User details
   const userName = voiceSettings.userName || 'Ipan';
@@ -87,6 +124,16 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
   const netBalance = totalIncome - totalExpense;
   const totalBudget = budgetConfig.totalBudget || 5000000;
   const budgetUsedPercent = Math.min(100, Math.round((totalExpense / totalBudget) * 100));
+
+  // Glow map
+  const glowMap = {
+    orange: 'bg-orange-500/25',
+    emerald: 'bg-emerald-500/25',
+    cyan: 'bg-cyan-500/25',
+    purple: 'bg-purple-500/25',
+    amber: 'bg-amber-500/25',
+    none: 'hidden',
+  };
 
   // Determine greeting based on local time
   const currentHour = new Date().getHours();
@@ -199,38 +246,97 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* 1. HERO BANNER CARD (Claymorphism & Character Scene) */}
-      <section className={`relative rounded-[32px] overflow-hidden p-5 sm:p-7 transition-all ${
+      {/* 1. HERO BANNER CARD (Claymorphism & 3D Interactive Pop-Out Character Scene) */}
+      <section className={`relative rounded-[32px] overflow-visible p-5 sm:p-7 transition-all ${
         darkMode 
           ? 'bg-gradient-to-r from-[#2C2420] via-[#241E1C] to-[#1E1917] border border-white/10 shadow-2xl' 
           : 'bg-gradient-to-r from-[#FDEFE3] via-[#FDF3EA] to-[#F7E6D7] border-2 border-white/80 shadow-[0_12px_32px_rgba(195,160,135,0.22)]'
       }`}>
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
           
-          {/* Left: 3D Clay Character Illustration Graphic */}
-          <div className="relative w-full max-w-[280px] sm:max-w-[320px] aspect-square sm:aspect-4/3 rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.12)] flex-shrink-0 group bg-[#F5ECE2] dark:bg-[#1A1614]">
-            <img
-              src={avatarMode === 'desk' ? clayAvatarBg : clayAvatarCutout}
-              alt="Karakter 3D Clay Ipan"
-              referrerPolicy="no-referrer"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none"></div>
-            
-            {/* Mode Switcher Pill */}
-            <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between pointer-events-auto">
-              <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[9.5px] font-bold tracking-wider uppercase border border-white/20">
-                {avatarMode === 'desk' ? 'Studio Clay' : 'Clay Cutout'}
-              </span>
-              <button
-                onClick={() => setAvatarMode(avatarMode === 'desk' ? 'cutout' : 'desk')}
-                className="px-2.5 py-1 rounded-full bg-white/90 dark:bg-[#2A2420]/90 backdrop-blur-md text-[#3E2F26] dark:text-white text-[9.5px] font-extrabold flex items-center space-x-1 shadow-sm hover:scale-105 transition active:scale-95 border border-white/40"
-                title="Ganti tampilan karakter (Dengan Background / Cutout)"
+          {/* Left: 3D Clay / Animated GIF Character Illustration (Clean & Minimalist 3D Stage) */}
+          <div 
+            className="relative w-full max-w-[280px] sm:max-w-[320px] aspect-square sm:aspect-4/3 flex items-center justify-center flex-shrink-0 select-none group perspective-1000 cursor-pointer"
+            onClick={() => setIsCustomizerOpen(true)}
+            onMouseMove={(e) => {
+              setIsHoveredAvatar(true);
+              handleAvatarMouseMove(e);
+            }}
+            onMouseLeave={handleAvatarMouseLeave}
+            title="Klik untuk kustomisasi karakter (Foto PNG / Animasi GIF)"
+          >
+            {/* Subtle Minimalist Quick Edit Button in Corner */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsCustomizerOpen(true);
+              }}
+              className="absolute top-0 right-0 sm:right-2 z-30 p-2 sm:p-2.5 rounded-2xl bg-white/85 dark:bg-[#251E1A]/85 backdrop-blur-md border border-white/60 dark:border-white/10 text-[#8A796E] dark:text-[#C5B7AE] hover:text-orange-600 dark:hover:text-orange-400 shadow-md hover:scale-110 active:scale-95 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center space-x-1 text-xs font-bold"
+              title="Kustomisasi Karakter"
+            >
+              <Camera className="w-3.5 h-3.5 text-orange-500" />
+              <span className="text-[10px] hidden sm:inline">Ganti</span>
+            </button>
+
+            {charMode === 'transparent_cutout' ? (
+              /* --- MODE 3D CUTOUT POP-OUT (Clean Floating Character & Podium) --- */
+              <div 
+                className="relative w-full h-full flex items-center justify-center"
+                style={{ perspective: '1000px' }}
               >
-                <ImageIcon className="w-3 h-3 text-orange-500" />
-                <span>{avatarMode === 'desk' ? 'Mode Cutout' : 'Mode Studio'}</span>
-              </button>
-            </div>
+                {/* 3D Clay Podium Base (Pedestal) */}
+                {charPodium && (
+                  <div className={`absolute -bottom-2 w-[82%] h-13 rounded-[36px] transition-all duration-500 border-2 ${
+                    darkMode 
+                      ? 'bg-gradient-to-b from-[#352B25] to-[#1F1916] border-white/10 shadow-[0_16px_32px_rgba(0,0,0,0.7)]' 
+                      : 'bg-gradient-to-b from-[#F2E0D0] to-[#E5CCA8] border-white/90 shadow-[0_14px_28px_rgba(180,140,110,0.35)]'
+                  }`}>
+                    <div className="absolute inset-x-4 top-1.5 h-1.5 rounded-full bg-white/40 blur-xs"></div>
+                  </div>
+                )}
+
+                {/* Ambient Soft Glow Behind Character */}
+                {charGlow !== 'none' && (
+                  <div className={`absolute -top-6 w-44 h-44 rounded-full blur-2xl pointer-events-none transition-all ${glowMap[charGlow]}`}></div>
+                )}
+
+                {/* 3D Character Popping OUT of the Frame (Transparent Background with Silhouette Drop Shadow) */}
+                <div 
+                  className={`relative z-20 w-full h-full flex items-center justify-center transition-transform duration-200 ease-out ${
+                    charAnim === 'float' ? 'animate-float' :
+                    charAnim === 'bounce' ? 'animate-bounce [animation-duration:2.5s]' :
+                    charAnim === 'pulse' ? 'animate-pulse' :
+                    charAnim === 'gentle' ? 'animate-float [animation-duration:6s]' : ''
+                  }`}
+                  style={{
+                    transform: `rotateY(${tilt.x}deg) rotateX(${tilt.y}deg) translateY(${isHoveredAvatar ? -12 : -4}px) scale(${isHoveredAvatar ? charScale * 1.04 : charScale}) ${charFlip ? 'scaleX(-1)' : ''}`,
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
+                  <img
+                    src={charUrl}
+                    alt="Karakter Pendamping Transparan"
+                    referrerPolicy="no-referrer"
+                    className="w-[92%] h-[115%] object-contain object-bottom filter drop-shadow-[0_18px_24px_rgba(0,0,0,0.35)] transition-transform duration-300 pointer-events-none"
+                    style={{
+                      transform: 'translateZ(30px)',
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              /* --- MODE STUDIO CLAY (Inside Rounded 3D Frame) --- */
+              <div 
+                className="relative w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/90 shadow-[0_8px_24px_rgba(0,0,0,0.12)] bg-[#F5ECE2] dark:bg-[#1A1614]"
+              >
+                <img
+                  src={charUrl}
+                  alt="Karakter Pendamping Studio"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            )}
           </div>
 
           {/* Right: Content & Action */}
@@ -832,6 +938,19 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
           Kelola Anggaran
         </button>
       </section>
+
+      {/* Character / Companion Customization Modal (GIF & Transparent Cutout) */}
+      <CharacterCustomizerModal
+        isOpen={isCustomizerOpen}
+        onClose={() => setIsCustomizerOpen(false)}
+        characterConfig={characterConfig}
+        onSaveCharacterConfig={(newConfig) => {
+          if (onSaveCharacterConfig) {
+            onSaveCharacterConfig(newConfig);
+          }
+        }}
+        darkMode={darkMode}
+      />
 
     </div>
   );

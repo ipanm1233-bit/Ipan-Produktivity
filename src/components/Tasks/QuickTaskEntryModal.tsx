@@ -125,6 +125,8 @@ export const QuickTaskEntryModal: React.FC<QuickTaskEntryModalProps> = ({
       priority,
       dueDate: dueDate || new Date().toISOString(),
       reminderMinutesBefore: 15,
+      reminderStages: [30, 10, 5, 0],
+      notifiedStages: [],
       completed: false,
       createdAt: new Date().toISOString(),
       subtasks: [],
@@ -335,11 +337,11 @@ export const QuickTaskEntryModal: React.FC<QuickTaskEntryModalProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="pt-2 flex items-center space-x-3">
+          <div className="pt-2 flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 rounded-2xl text-xs font-bold text-[#8A796E] hover:text-[#3E2F26] dark:hover:text-white bg-black/5 dark:bg-white/5 transition active:scale-95"
+              className="w-full sm:flex-1 py-3 rounded-2xl text-xs font-bold text-[#8A796E] hover:text-[#3E2F26] dark:hover:text-white bg-black/5 dark:bg-white/5 transition active:scale-95 text-center"
             >
               Lanjut ke Dashboard
             </button>
@@ -347,13 +349,13 @@ export const QuickTaskEntryModal: React.FC<QuickTaskEntryModalProps> = ({
             <button
               type="submit"
               disabled={!title.trim()}
-              className={`flex-1 py-3 rounded-2xl text-xs font-extrabold text-white transition active:scale-95 shadow-md flex items-center justify-center space-x-1.5 ${
+              className={`w-full sm:flex-1 py-3 rounded-2xl text-xs font-extrabold text-white transition active:scale-95 shadow-md flex items-center justify-center space-x-1.5 ${
                 title.trim()
                   ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-orange-500/30'
                   : 'bg-gray-400 opacity-50 cursor-not-allowed'
               }`}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 flex-shrink-0" />
               <span>Tambahkan & Mulai</span>
             </button>
           </div>

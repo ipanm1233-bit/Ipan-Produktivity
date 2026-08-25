@@ -249,51 +249,51 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
       </div>
 
       {/* 4 Symmetrical 3D Clay KPI Metric Ribbon Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4">
         
         {/* Metric 1: Skor Produktivitas */}
-        <div className="p-5 rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5">
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider truncate">
               Skor Produktivitas
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-500/25 shadow-inner">
-              <Award className="w-5 h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-orange-500/15 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-500/25 shadow-inner flex-shrink-0 ml-1">
+              <Award className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-orange-600 dark:text-orange-400">
+          <div className="mt-3 flex items-baseline space-x-1.5">
+            <span className="text-2xl sm:text-3xl font-black text-orange-600 dark:text-orange-400">
               {productivityScore}
             </span>
-            <span className="text-xs font-bold text-[#8A796E] dark:text-[#A8988D]">/ 100 Poin</span>
+            <span className="text-[11px] sm:text-xs font-bold text-[#8A796E] dark:text-[#A8988D]">/ 100 Poin</span>
           </div>
-          <div className="mt-2 text-[11px] text-[#6B5A4E] dark:text-[#C5B7AE] font-semibold flex items-center space-x-1.5">
+          <div className="mt-2 text-[10px] sm:text-[11px] text-[#6B5A4E] dark:text-[#C5B7AE] font-semibold flex items-center space-x-1.5">
             <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
             <span className="truncate">
-              {productivityScore >= 80 ? '🌟 Performa luar biasa konsisten' : productivityScore >= 60 ? '👍 Produktivitas stabil & baik' : '⚡ Perlu dorongan fokus'}
+              {productivityScore >= 80 ? '🌟 Performa luar biasa' : productivityScore >= 60 ? '👍 Produktivitas stabil' : '⚡ Perlu dorongan fokus'}
             </span>
           </div>
         </div>
 
         {/* Metric 2: Tingkat Penyelesaian Tugas */}
-        <div className="p-5 rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5">
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider">
-              Tugas Terselesaikan
+            <span className="text-[11px] sm:text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider truncate">
+              Tugas Selesai
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/25 shadow-inner">
-              <CheckCircle2 className="w-5 h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/25 shadow-inner flex-shrink-0 ml-1">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+          <div className="mt-3 flex items-baseline space-x-1.5 truncate">
+            <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
               {overallRate}%
             </span>
-            <span className="text-xs font-bold text-[#8A796E] dark:text-[#A8988D]">
+            <span className="text-[11px] sm:text-xs font-bold text-[#8A796E] dark:text-[#A8988D] truncate">
               ({completedTasks}/{totalTasks} tugas)
             </span>
           </div>
-          <div className="mt-2.5 w-full bg-[#E8DACB] dark:bg-[#1E1A17] h-2 rounded-full overflow-hidden shadow-inner">
+          <div className="mt-2 w-full bg-[#E8DACB] dark:bg-[#1E1A17] h-2 rounded-full overflow-hidden shadow-inner">
             <div 
               className="bg-emerald-500 h-full rounded-full transition-all duration-700 shadow-sm"
               style={{ width: `${overallRate}%` }}
@@ -302,49 +302,49 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
         </div>
 
         {/* Metric 3: Arus Kas Bersih (Net Flow) */}
-        <div className="p-5 rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5">
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider truncate">
               Arus Kas Bersih
             </span>
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-inner ${
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center border shadow-inner flex-shrink-0 ml-1 ${
               netBalance >= 0 
                 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/25' 
                 : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/25'
             }`}>
-              {netBalance >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+              {netBalance >= 0 ? <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" /> : <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
           </div>
-          <div className="mt-4 flex items-baseline space-x-1 min-w-0">
-            <span className={`text-2xl sm:text-3xl font-black truncate ${
+          <div className="mt-3 flex items-baseline space-x-1 min-w-0">
+            <span className={`text-xl sm:text-2xl lg:text-3xl font-black truncate ${
               netBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
             }`}>
               {netBalance >= 0 ? '+' : '-'}Rp {Math.abs(netBalance).toLocaleString('id-ID')}
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-[#6B5A4E] dark:text-[#C5B7AE] font-semibold flex items-center justify-between">
-            <span className="text-emerald-600 dark:text-emerald-400">+Rp {formatShortRupiah(totalIncome)}</span>
-            <span className="text-rose-600 dark:text-rose-400">-Rp {formatShortRupiah(totalExpense)}</span>
+          <div className="mt-2 text-[10px] sm:text-[11px] text-[#6B5A4E] dark:text-[#C5B7AE] font-semibold flex items-center justify-between truncate">
+            <span className="text-emerald-600 dark:text-emerald-400 truncate">+Rp {formatShortRupiah(totalIncome)}</span>
+            <span className="text-rose-600 dark:text-rose-400 truncate ml-2">-Rp {formatShortRupiah(totalExpense)}</span>
           </div>
         </div>
 
         {/* Metric 4: Rasio Tabungan / Efisiensi Budget */}
-        <div className="p-5 rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5">
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl clay-card flex flex-col justify-between transition hover:-translate-y-0.5 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-extrabold text-[#8A796E] dark:text-[#BDB0A4] uppercase tracking-wider truncate">
               Rasio Tabungan
             </span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/25 shadow-inner">
-              <Wallet className="w-5 h-5" />
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/25 shadow-inner flex-shrink-0 ml-1">
+              <Wallet className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </div>
-          <div className="mt-4 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-amber-600 dark:text-amber-400">
+          <div className="mt-3 flex items-baseline space-x-1.5">
+            <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
               {savingsRate}%
             </span>
-            <span className="text-xs font-bold text-[#8A796E] dark:text-[#A8988D]">dari pemasukan</span>
+            <span className="text-[11px] sm:text-xs font-bold text-[#8A796E] dark:text-[#A8988D]">dari pemasukan</span>
           </div>
-          <div className="mt-2.5 w-full bg-[#E8DACB] dark:bg-[#1E1A17] h-2 rounded-full overflow-hidden shadow-inner">
+          <div className="mt-2 w-full bg-[#E8DACB] dark:bg-[#1E1A17] h-2 rounded-full overflow-hidden shadow-inner">
             <div 
               className="bg-amber-500 h-full rounded-full transition-all duration-700 shadow-sm"
               style={{ width: `${Math.min(100, savingsRate)}%` }}
@@ -355,24 +355,24 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
       </div>
 
       {/* SECTION 1: PRIMARY CHARTS (TASK COMPLETION & CASH FLOW TIMELINES) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         
         {/* Chart A: 7D / 30D Task Completion Bar Chart */}
         {(activeSection === 'all' || activeSection === 'tasks') && (
-          <div className="p-5 sm:p-6 clay-card flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-4">
+          <div className="p-4 sm:p-6 clay-card flex flex-col justify-between min-w-0">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2">
-                  <CheckCircle2 className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                <h3 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 dark:text-orange-400 flex-shrink-0" />
                   <span>Tren Penyelesaian Tugas ({timeRange === '7d' ? '7 Hari' : '30 Hari'})</span>
                 </h3>
-                <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mt-0.5 font-medium">
+                <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] mt-0.5 font-medium">
                   Rasio tugas selesai vs tertunda harian
                 </p>
               </div>
             </div>
 
-            <div className="h-64 sm:h-72 w-full mt-2">
+            <div className="h-60 sm:h-72 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={timeSeriesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridColor} vertical={false} />
@@ -404,20 +404,20 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
 
         {/* Chart B: Cash Flow Income vs Expense Area Chart */}
         {(activeSection === 'all' || activeSection === 'finance') && (
-          <div className="p-5 sm:p-6 clay-card flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-4">
+          <div className="p-4 sm:p-6 clay-card flex flex-col justify-between min-w-0">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2">
-                  <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2">
+                  <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                   <span>Dinamika Arus Kas ({timeRange === '7d' ? '7 Hari' : '30 Hari'})</span>
                 </h3>
-                <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mt-0.5 font-medium">
+                <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] mt-0.5 font-medium">
                   Perbandingan tren nominal pemasukan dan pengeluaran
                 </p>
               </div>
             </div>
 
-            <div className="h-64 sm:h-72 w-full mt-2">
+            <div className="h-60 sm:h-72 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={timeSeriesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <defs>
@@ -465,24 +465,24 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
 
       </div>
 
-      {/* SECTION 2: BREAKDOWN GRIDS (CATEGORIES & PRIORITIES) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* SECTION 2: BREAKDOWN GRIDS (CATEGORIES & PRIORITIES - BALANCED SYMMETRICAL GRID) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         
         {/* Card 1: Task Category Breakdown */}
         {(activeSection === 'all' || activeSection === 'tasks') && (
-          <div className="p-5 sm:p-6 clay-card flex flex-col justify-between">
+          <div className="p-4 sm:p-6 clay-card flex flex-col justify-between min-w-0">
             <div>
-              <h3 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2 mb-1">
-                <PieIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                <span>Distribusi Kategori Tugas</span>
+              <h3 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2 mb-1">
+                <PieIcon className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                <span className="truncate">Distribusi Kategori Tugas</span>
               </h3>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mb-4 font-medium">
+              <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] mb-3 font-medium">
                 Alokasi fokus waktu berdasarkan bidang aktivitas
               </p>
 
               {taskCategoryStats.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="h-44 w-full flex items-center justify-center">
+                <div className="space-y-3">
+                  <div className="h-40 w-full flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -491,8 +491,8 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
                           nameKey="name"
                           cx="50%"
                           cy="50%"
-                          innerRadius={40}
-                          outerRadius={65}
+                          innerRadius={36}
+                          outerRadius={58}
                           paddingAngle={4}
                         >
                           {taskCategoryStats.map((entry, index) => (
@@ -504,14 +504,14 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="space-y-2 text-xs">
+                  <div className="space-y-1.5 text-xs max-h-48 overflow-y-auto pr-1">
                     {taskCategoryStats.map((cat, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 rounded-xl clay-card-sm">
                         <div className="flex items-center space-x-2 min-w-0">
-                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
                           <span className="font-extrabold truncate text-[#3E2F26] dark:text-[#FAF4EE]">{cat.name}</span>
                         </div>
-                        <div className="font-bold text-[#8A796E] dark:text-[#BDB0A4]">
+                        <div className="font-bold text-[#8A796E] dark:text-[#BDB0A4] flex-shrink-0 ml-2">
                           {cat.completed}/{cat.total} selesai
                         </div>
                       </div>
@@ -529,19 +529,19 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
 
         {/* Card 2: Expense Category Breakdown */}
         {(activeSection === 'all' || activeSection === 'finance') && (
-          <div className="p-5 sm:p-6 clay-card flex flex-col justify-between">
+          <div className="p-4 sm:p-6 clay-card flex flex-col justify-between min-w-0">
             <div>
-              <h3 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2 mb-1">
-                <PieIcon className="w-5 h-5 text-rose-500" />
-                <span>Pengeluaran per Kategori</span>
+              <h3 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2 mb-1">
+                <PieIcon className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500 flex-shrink-0" />
+                <span className="truncate">Pengeluaran per Kategori</span>
               </h3>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mb-4 font-medium">
+              <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] mb-3 font-medium">
                 Komposisi alokasi dana dan pos pengeluaran
               </p>
 
               {expenseCatStats.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="h-44 w-full flex items-center justify-center">
+                <div className="space-y-3">
+                  <div className="h-40 w-full flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -550,8 +550,8 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
                           nameKey="name"
                           cx="50%"
                           cy="50%"
-                          innerRadius={40}
-                          outerRadius={65}
+                          innerRadius={36}
+                          outerRadius={58}
                           paddingAngle={4}
                         >
                           {expenseCatStats.map((entry, index) => (
@@ -563,14 +563,14 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="space-y-2 text-xs">
+                  <div className="space-y-1.5 text-xs max-h-48 overflow-y-auto pr-1">
                     {expenseCatStats.map((cat, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 rounded-xl clay-card-sm">
                         <div className="flex items-center space-x-2 min-w-0">
-                          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
                           <span className="font-extrabold truncate text-[#3E2F26] dark:text-[#FAF4EE]">{cat.name}</span>
                         </div>
-                        <div className="font-black text-rose-600 dark:text-rose-400">
+                        <div className="font-black text-rose-600 dark:text-rose-400 flex-shrink-0 ml-2">
                           Rp {formatShortRupiah(cat.total)}
                         </div>
                       </div>
@@ -588,17 +588,17 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
 
         {/* Card 3: Priority & Urgency Levels */}
         {(activeSection === 'all' || activeSection === 'tasks') && (
-          <div className="p-5 sm:p-6 clay-card flex flex-col justify-between">
+          <div className="p-4 sm:p-6 clay-card flex flex-col justify-between min-w-0 md:col-span-2 lg:col-span-1">
             <div>
-              <h3 className="text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2 mb-1">
-                <Target className="w-5 h-5 text-amber-500" />
-                <span>Alokasi Tingkat Prioritas</span>
+              <h3 className="text-sm sm:text-base font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-2 mb-1">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 flex-shrink-0" />
+                <span className="truncate">Alokasi Tingkat Prioritas</span>
               </h3>
-              <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mb-4 font-medium">
+              <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] mb-3 font-medium">
                 Komposisi urgensi tugas untuk manajemen waktu optimal
               </p>
 
-              <div className="space-y-3.5 pt-1">
+              <div className="space-y-2.5 pt-1">
                 {[
                   { label: 'Mendesak (Urgent)', key: 'urgent', color: 'bg-rose-500', count: tasks.filter(t => t.priority === 'urgent').length },
                   { label: 'Tinggi (High)', key: 'high', color: 'bg-amber-500', count: tasks.filter(t => t.priority === 'high').length },
@@ -607,10 +607,10 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
                 ].map((p, i) => {
                   const percent = totalTasks > 0 ? (p.count / totalTasks) * 100 : 0;
                   return (
-                    <div key={i} className="p-2.5 rounded-2xl clay-card-sm space-y-1.5">
+                    <div key={i} className="p-2 sm:p-2.5 rounded-xl clay-card-sm space-y-1">
                       <div className="flex justify-between text-xs font-bold">
-                        <span className="text-[#3E2F26] dark:text-[#FAF4EE]">{p.label}</span>
-                        <span className="text-[#8A796E] dark:text-[#BDB0A4] font-black">{p.count} ({percent.toFixed(0)}%)</span>
+                        <span className="text-[#3E2F26] dark:text-[#FAF4EE] truncate">{p.label}</span>
+                        <span className="text-[#8A796E] dark:text-[#BDB0A4] font-black flex-shrink-0 ml-1">{p.count} ({percent.toFixed(0)}%)</span>
                       </div>
                       <div className="w-full bg-[#E8DACB] dark:bg-[#1E1A17] h-2 rounded-full overflow-hidden shadow-inner">
                         <div 
@@ -625,9 +625,9 @@ export const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
             </div>
 
             {/* Smart Insight Pill */}
-            <div className="mt-4 p-3 rounded-2xl bg-orange-500/10 dark:bg-orange-950/40 border border-orange-500/20 text-xs text-[#5A453A] dark:text-[#D4C7BC] font-medium flex items-center space-x-2">
+            <div className="mt-3.5 p-2.5 rounded-xl bg-orange-500/10 dark:bg-orange-950/40 border border-orange-500/20 text-[11px] sm:text-xs text-[#5A453A] dark:text-[#D4C7BC] font-medium flex items-center space-x-2">
               <Zap className="w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" />
-              <span>Prioritaskan tugas <strong>Mendesak & Tinggi</strong> di awal pagi untuk efisiensi energi optimal.</span>
+              <span>Prioritaskan tugas <strong>Mendesak & Tinggi</strong> di awal pagi untuk hasil maksimal.</span>
             </div>
           </div>
         )}

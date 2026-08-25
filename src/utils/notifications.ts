@@ -1,5 +1,5 @@
 import { Task, Transaction, MonthlyBudgetConfig, VoiceSettings, NotificationItem } from '../types';
-import { playChime, speakText, generateTaskVoicePrompt, generateBudgetVoicePrompt } from './audio';
+import { playChime, speakText, generateStageVoicePrompt, generateTaskVoicePrompt, generateBudgetVoicePrompt } from './audio';
 
 // Request notification permission from browser
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
@@ -34,16 +34,17 @@ export function showBrowserNotification(title: string, options?: NotificationOpt
   // Trigger device hardware vibration if supported (Android / Mobile)
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate([200, 100, 200, 100, 300]);
+      navigator.vibrate([300, 120, 300, 120, 500]);
     } catch (e) {
       // Ignore vibration errors
     }
   }
 
-  const enhancedOptions: NotificationOptions & { vibrate?: number[] } = {
+  const enhancedOptions: NotificationOptions & { vibrate?: number[]; renotify?: boolean } = {
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    vibrate: [200, 100, 200, 100, 300],
+    vibrate: [300, 120, 300, 120, 500],
+    renotify: true,
     ...options,
   };
 
@@ -75,7 +76,7 @@ export async function triggerTestMobileNotification(): Promise<boolean> {
   if (perm === 'granted') {
     playChime('success');
     showBrowserNotification('🎉 Notifikasi TaskPan Aktif!', {
-      body: 'Hebat! Perangkat Anda kini siap menerima pemberitahuan tenggat tugas dan peringatan anggaran secara otomatis.',
+      body: 'Hebat! Notifikasi HP siap mengingatkan Anda pada 30 menit, 10 menit, 5 menit sebelum tenggat, dan saat waktu tugas selesai.',
       tag: 'taskpan-welcome-test',
     });
     return true;
@@ -90,60 +91,86 @@ export function checkDeadlinesAndBudgets(
   budgetConfig: MonthlyBudgetConfig,
   voiceSettings: VoiceSettings,
   onNewNotification: (notification: NotificationItem) => void,
-  onTaskNotified: (taskId: string) => void
+  onTaskStageNotified: (taskId: string, stage: number) => void
 ) {
   const now = new Date();
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  // 1. Check Task Deadlines
+  // 1. Check Multi-Stage Task Deadlines (30m, 10m, 5m, dan 0m / selesai)
   tasks.forEach((task) => {
-    if (task.completed || !task.dueDate || task.notified) return;
+    if (task.completed || !task.dueDate) return;
 
     const dueDate = new Date(task.dueDate);
     const diffMs = dueDate.getTime() - now.getTime();
     const diffMinutes = Math.floor(diffMs / 60000);
+    const dueTimeFormatted = dueDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-    const reminderThreshold = task.reminderMinutesBefore || 15;
+    // Multi-stage list: default to [30, 10, 5, 0] (or task configured stages)
+    const stages: number[] = task.reminderStages && task.reminderStages.length > 0
+      ? task.reminderStages
+      : [30, 10, 5, 0];
 
-    // Trigger if within reminder window and not yet passed by more than 10 mins
-    if (diffMinutes <= reminderThreshold && diffMinutes >= -10) {
-      const isOverdue = diffMinutes < 0;
-      const title = isOverdue
-        ? `🚨 Tugas Terlewat: ${task.title}`
-        : `⏰ Pengingat Tenggat: ${task.title}`;
-      
-      const message = isOverdue
-        ? `Tenggat waktu tugas ini telah berakhir ${Math.abs(diffMinutes)} menit yang lalu.`
-        : `Tenggat waktu dalam ${diffMinutes} menit (${dueDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })})`;
+    const alreadyNotified = task.notifiedStages || (task.notified ? [15] : []);
 
-      // Native browser notification
-      showBrowserNotification(title, {
-        body: message,
-        tag: `task-${task.id}`,
-      });
+    stages.forEach((stage) => {
+      if (alreadyNotified.includes(stage)) return;
 
-      // Melodic chime
-      playChime('alert');
+      let isTriggerMatch = false;
+      let title = '';
+      let message = '';
+      let soundType: 'alert' | 'warning' = 'alert';
 
-      // Voice reminder
-      if (voiceSettings.enabled && (task.voiceReminderEnabled ?? true) && voiceSettings.taskAlertsEnabled) {
-        const speech = generateTaskVoicePrompt(task, voiceSettings);
-        speakText(speech, voiceSettings);
+      if (stage === 30 && diffMinutes <= 30 && diffMinutes > 10) {
+        isTriggerMatch = true;
+        title = `⏰ 30 Menit Menuju Tenggat: ${task.title}`;
+        message = `Tugas "${task.title}" tersisa 30 menit lagi (Pukul ${dueTimeFormatted}). Persiapkan sekarang!`;
+      } else if (stage === 10 && diffMinutes <= 10 && diffMinutes > 5) {
+        isTriggerMatch = true;
+        title = `⚠️ 10 Menit Menuju Tenggat: ${task.title}`;
+        message = `Perhatian! Tugas "${task.title}" tersisa 10 menit lagi sebelum batas waktu pukul ${dueTimeFormatted}.`;
+        soundType = 'warning';
+      } else if (stage === 5 && diffMinutes <= 5 && diffMinutes > 0) {
+        isTriggerMatch = true;
+        title = `🚨 Mendesak (5 Menit): ${task.title}`;
+        message = `Segera selesaikan! Waktu tugas "${task.title}" tersisa 5 menit terakhir.`;
+        soundType = 'warning';
+      } else if (stage === 0 && diffMinutes <= 0 && diffMinutes >= -30) {
+        isTriggerMatch = true;
+        title = `⌛ Waktu Tenggat Selesai: ${task.title}`;
+        message = `Batas waktu tugas "${task.title}" telah tiba pukul ${dueTimeFormatted}. Silakan tandai jika sudah selesai!`;
+        soundType = 'warning';
       }
 
-      // Add to in-app notification center
-      const notifItem: NotificationItem = {
-        id: `notif-${task.id}-${Date.now()}`,
-        title,
-        message,
-        type: 'task_deadline',
-        timestamp: new Date().toISOString(),
-        read: false,
-      };
+      if (isTriggerMatch) {
+        // Native mobile / desktop push notification
+        showBrowserNotification(title, {
+          body: message,
+          tag: `task-${task.id}-stage-${stage}`,
+        });
 
-      onNewNotification(notifItem);
-      onTaskNotified(task.id);
-    }
+        // Melodic chime
+        playChime(soundType);
+
+        // Personalized Voice reminder
+        if (voiceSettings.enabled && (task.voiceReminderEnabled ?? true) && voiceSettings.taskAlertsEnabled) {
+          const speech = generateStageVoicePrompt(task, stage, voiceSettings);
+          speakText(speech, voiceSettings);
+        }
+
+        // Add to in-app notification center
+        const notifItem: NotificationItem = {
+          id: `notif-${task.id}-s${stage}-${Date.now()}`,
+          title,
+          message,
+          type: 'task_deadline',
+          timestamp: new Date().toISOString(),
+          read: false,
+        };
+
+        onNewNotification(notifItem);
+        onTaskStageNotified(task.id, stage);
+      }
+    });
   });
 
   // 2. Check Budget Alerts for Current Month

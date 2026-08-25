@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, ShieldCheck, Delete, Eye, EyeOff } from 'lucide-react';
 import { TaskPanLogo } from '../Common/TaskPanLogo';
 import ipanAvatar from '../../assets/images/ipan_avatar_clay_1787564213642.jpg';
-import { playChime } from '../../utils/audio';
+import { playChime, initAudioOnUserGesture } from '../../utils/audio';
 
 interface ClayPinLockProps {
   onUnlock: () => void;
@@ -27,6 +27,7 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
 
   // Handle number click
   const handleDigit = (digit: string) => {
+    initAudioOnUserGesture();
     if (pin.length < targetLength) {
       const nextPin = pin + digit;
       setPin(nextPin);
@@ -40,6 +41,7 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
 
   // Handle backspace / delete
   const handleDelete = () => {
+    initAudioOnUserGesture();
     if (pin.length > 0) {
       setPin(pin.slice(0, -1));
       setErrorMsg('');
@@ -48,12 +50,14 @@ export const ClayPinLock: React.FC<ClayPinLockProps> = ({
 
   // Handle clear
   const handleClear = () => {
+    initAudioOnUserGesture();
     setPin('');
     setErrorMsg('');
   };
 
   // Verify PIN
   const verifyPin = (enteredPin: string) => {
+    initAudioOnUserGesture();
     const currentPin = localStorage.getItem(PIN_STORAGE_KEY) || DEFAULT_PIN;
     if (enteredPin === currentPin) {
       playChime('success');

@@ -22,7 +22,7 @@ import {
   subscribeToFirestoreRoom 
 } from './utils/firestoreService';
 import { checkDeadlinesAndBudgets } from './utils/notifications';
-import { speakText, playChime } from './utils/audio';
+import { speakText, playChime, initAudioOnUserGesture } from './utils/audio';
 import { ClaySidebar } from './components/Sidebar/ClaySidebar';
 import { ClayDashboardOverview } from './components/Dashboard/ClayDashboardOverview';
 import { Navbar } from './components/Navbar';
@@ -227,7 +227,7 @@ export default function App() {
     };
   }, [appData.syncRoomId]);
 
-  // Background deadline & budget alert watcher (runs every 20 seconds)
+  // Background deadline & budget alert watcher (runs every 10 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       checkDeadlinesAndBudgets(
@@ -241,14 +241,22 @@ export default function App() {
             notifications: [newNotif, ...prev.notifications].slice(0, 50),
           }));
         },
-        (taskId) => {
+        (taskId, stage) => {
           setAppData((prev) => ({
             ...prev,
-            tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, notified: true } : t)),
+            tasks: prev.tasks.map((t) =>
+              t.id === taskId
+                ? {
+                    ...t,
+                    notifiedStages: Array.from(new Set([...(t.notifiedStages || []), stage])),
+                    notified: true,
+                  }
+                : t
+            ),
           }));
         }
       );
-    }, 20000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [appData.tasks, appData.transactions, appData.monthlyBudget, appData.voiceSettings]);
@@ -390,6 +398,7 @@ export default function App() {
   // Handle Unlock App Screen: Read aloud existing tasks & open Quick Task Entry Popup
   const handleUnlockApp = () => {
     setIsLocked(false);
+    initAudioOnUserGesture();
 
     // 1. Voice briefing: Read aloud existing tasks in natural Indonesian
     const name = appData.voiceSettings.userName || 'Ipan';
@@ -397,16 +406,21 @@ export default function App() {
 
     let speechPrompt = '';
     if (pendingTasks.length === 0) {
-      speechPrompt = `Selamat datang di TaskPan, ${name}! Saat ini belum ada tugas aktif yang tertunda. Silakan tentukan dan tambahkan tugas baru Anda hari ini.`;
+      speechPrompt = `Selamat datang kembali di TaskPan, ${name}! Saat ini belum ada tugas aktif yang tertunda. Silakan buat tugas baru atau atur rencana produktivitasmu hari ini.`;
     } else if (pendingTasks.length === 1) {
-      speechPrompt = `Selamat datang di TaskPan, ${name}! Anda memiliki 1 tugas aktif hari ini, yaitu: "${pendingTasks[0].title}". Silakan tentukan tugas yang ingin Anda kerjakan atau tambahkan sekarang.`;
+      const t = pendingTasks[0];
+      const dueTime = t.dueDate ? ` dengan batas waktu jam ${new Date(t.dueDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` : '';
+      speechPrompt = `Selamat datang di TaskPan, ${name}! Kamu memiliki 1 tugas aktif: "${t.title}"${dueTime}. Ayo selesaikan sekarang!`;
     } else {
       const taskListSpoken = pendingTasks
-        .slice(0, 4)
-        .map((t, idx) => `Tugas ${idx + 1}: "${t.title}"`)
+        .slice(0, 3)
+        .map((t, idx) => {
+          const timeStr = t.dueDate ? ` (jam ${new Date(t.dueDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })})` : '';
+          return `Tugas ${idx + 1}: "${t.title}"${timeStr}`;
+        })
         .join('. ');
-      const extraCount = pendingTasks.length > 4 ? ` dan ${pendingTasks.length - 4} tugas lainnya` : '';
-      speechPrompt = `Selamat datang di TaskPan, ${name}! Anda memiliki ${pendingTasks.length} tugas aktif hari ini. ${taskListSpoken}${extraCount}. Mau kerjakan atau tambahkan tugas apa sekarang?`;
+      const extraCount = pendingTasks.length > 3 ? ` dan ${pendingTasks.length - 3} tugas lainnya` : '';
+      speechPrompt = `Selamat datang di TaskPan, ${name}! Kamu memiliki ${pendingTasks.length} tugas aktif hari ini. ${taskListSpoken}${extraCount}. Mau mulai kerjakan atau tambahkan tugas apa sekarang?`;
     }
 
     if (appData.voiceSettings.enabled) {
@@ -441,7 +455,7 @@ export default function App() {
       darkMode ? 'bg-[#181513] text-[#FAF4EE]' : 'bg-[#F5EBE1] text-[#3E2F26]'
     }`}>
       
-      <div className="max-w-[1440px] mx-auto p-3 sm:p-5 lg:p-6 flex flex-col md:flex-row gap-5 lg:gap-7 items-start">
+      <div className="max-w-[1440px] mx-auto p-2.5 sm:p-4 md:p-5 lg:p-6 flex flex-col md:flex-row gap-3.5 sm:gap-4 lg:gap-6 items-start">
         
         {/* LEFT 3D CLAY SIDEBAR (Desktop/Tablet) */}
         <div className="hidden md:block sticky top-6">
@@ -510,6 +524,17 @@ export default function App() {
                 financeCategories={appData.financeCategories}
                 budgetConfig={appData.monthlyBudget}
                 voiceSettings={appData.voiceSettings}
+                characterConfig={appData.characterAvatar || appData.voiceSettings.characterAvatar}
+                onSaveCharacterConfig={(newCharConfig) => {
+                  setAppData((prev) => ({
+                    ...prev,
+                    characterAvatar: newCharConfig,
+                    voiceSettings: {
+                      ...prev.voiceSettings,
+                      characterAvatar: newCharConfig,
+                    },
+                  }));
+                }}
                 onToggleTaskComplete={handleToggleTaskComplete}
                 onOpenNewTaskModal={() => {
                   setTaskToEdit(null);

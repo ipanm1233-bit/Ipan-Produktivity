@@ -58,7 +58,7 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
   ];
 
   return (
-    <aside className={`w-64 flex-shrink-0 flex flex-col justify-between p-4 sm:p-5 rounded-[32px] transition-all duration-300 ${
+    <aside className={`w-56 lg:w-64 flex-shrink-0 flex flex-col justify-between p-3.5 sm:p-4 lg:p-5 rounded-[28px] lg:rounded-[32px] transition-all duration-300 ${
       darkMode 
         ? 'bg-[#221E1B] border border-white/10 shadow-2xl shadow-black/60' 
         : 'bg-[#FAF3EC] border-2 border-white/80 shadow-[0_12px_32px_rgba(186,163,143,0.22)]'

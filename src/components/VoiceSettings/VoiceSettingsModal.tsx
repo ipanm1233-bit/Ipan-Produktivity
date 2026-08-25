@@ -13,7 +13,8 @@ import {
   Square
 } from 'lucide-react';
 import { VoiceSettings } from '../../types';
-import { getAvailableVoices, speakText, stopSpeaking } from '../../utils/audio';
+import { getAvailableVoices, speakText, stopSpeaking, initAudioOnUserGesture } from '../../utils/audio';
+import { triggerTestMobileNotification } from '../../utils/notifications';
 
 interface VoiceSettingsModalProps {
   isOpen: boolean;
@@ -94,6 +95,7 @@ export const VoiceSettingsModal: React.FC<VoiceSettingsModalProps> = ({
 
   const handleSave = () => {
     onSaveVoiceSettings({
+      ...voiceSettings,
       enabled,
       userName: userName.trim() || 'Sahabat',
       style,
@@ -104,6 +106,7 @@ export const VoiceSettingsModal: React.FC<VoiceSettingsModalProps> = ({
       lang: 'id-ID',
       taskAlertsEnabled,
       financeAlertsEnabled,
+      characterAvatar: voiceSettings.characterAvatar,
     });
     onClose();
   };
@@ -298,51 +301,75 @@ export const VoiceSettingsModal: React.FC<VoiceSettingsModalProps> = ({
             </label>
           </div>
 
-          {/* Test Voice Play Button */}
-          <div className="pt-2">
+          {/* Test Action Buttons */}
+          <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <button
               type="button"
-              onClick={handleTestVoice}
-              className={`w-full py-3.5 rounded-2xl clay-button text-orange-600 dark:text-orange-400 font-extrabold text-xs flex items-center justify-center space-x-2 transition ${
+              onClick={() => {
+                initAudioOnUserGesture();
+                handleTestVoice();
+              }}
+              className={`w-full py-3 px-3 rounded-2xl clay-button text-orange-600 dark:text-orange-400 font-extrabold text-xs flex items-center justify-center space-x-2 transition ${
                 isPlayingTest ? 'border-2 border-orange-500 bg-orange-50/80 dark:bg-orange-950/40' : ''
               }`}
             >
               {isPlayingTest ? (
                 <>
                   <Square className="w-4 h-4 fill-orange-600 dark:fill-orange-400 animate-pulse" />
-                  <span className="flex items-center space-x-1.5">
-                    <span>Sedang Berbicara (Klik untuk Stop)</span>
-                    <span className="flex space-x-0.5 items-center">
-                      <span className="w-1 h-3 bg-orange-600 dark:bg-orange-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                      <span className="w-1 h-4 bg-orange-600 dark:bg-orange-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                      <span className="w-1 h-2 bg-orange-600 dark:bg-orange-400 rounded-full animate-bounce"></span>
-                    </span>
+                  <span className="flex items-center space-x-1">
+                    <span>Stop Suara</span>
                   </span>
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4" />
-                  <span>Uji Coba Pengingat Suara AI</span>
+                  <span>Uji Coba Suara AI</span>
                 </>
               )}
             </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                initAudioOnUserGesture();
+                const success = await triggerTestMobileNotification();
+                if (!success) {
+                  alert('Silakan izinkan izin notifikasi pada browser/perangkat Anda.');
+                }
+              }}
+              className="w-full py-3 px-3 rounded-2xl clay-button text-sky-600 dark:text-sky-400 font-extrabold text-xs flex items-center justify-center space-x-2 transition"
+            >
+              <BellRing className="w-4 h-4" />
+              <span>Tes Notifikasi HP (Push & Getar)</span>
+            </button>
+          </div>
+
+          {/* Multi-stage Info Box */}
+          <div className="p-3 rounded-2xl bg-[#EDE0D2]/60 dark:bg-[#201C19] border border-[#D8C7B8] dark:border-white/5 text-[11px] text-[#8A796E] dark:text-[#BDB0A4] space-y-1">
+            <div className="font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] flex items-center space-x-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-orange-500" />
+              <span>Jadwal Pengingat Bertahap Aktif:</span>
+            </div>
+            <p>
+              Notifikasi otomatis dikirim pada <strong>30 menit</strong>, <strong>10 menit</strong>, <strong>5 menit sebelum tenggat</strong>, dan <strong>saat waktu tugas selesai</strong> dengan nada lonceng & suara asisten.
+            </p>
           </div>
 
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#E8DACB] dark:border-white/10 flex items-center justify-end space-x-3">
+        {/* Footer (Mobile Adaptive & Symmetric) */}
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-t border-[#E8DACB] dark:border-white/10 flex items-center justify-end space-x-2.5 sm:space-x-3">
           <button
             type="button"
             onClick={onClose}
-            className="clay-button px-5 py-2.5 rounded-2xl text-xs font-bold text-[#8A796E] dark:text-[#D4C7BC]"
+            className="flex-1 sm:flex-initial clay-button px-5 py-2.5 rounded-2xl text-xs font-bold text-[#8A796E] dark:text-[#D4C7BC]"
           >
             Batal
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="clay-button-primary px-6 py-2.5 rounded-2xl text-xs font-extrabold"
+            className="flex-1 sm:flex-initial clay-button-primary px-6 py-2.5 rounded-2xl text-xs font-extrabold"
           >
             Simpan Pengaturan Suara
           </button>

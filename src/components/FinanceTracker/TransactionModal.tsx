@@ -329,19 +329,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end space-x-3 pt-3">
+          {/* Action Buttons (Mobile Adaptive & Symmetric) */}
+          <div className="flex items-center justify-end space-x-2.5 sm:space-x-3 pt-3">
             <button
               type="button"
               onClick={onClose}
-              className="clay-button px-5 py-2.5 rounded-2xl text-xs font-bold text-[#8A796E] dark:text-[#D4C7BC]"
+              className="flex-1 sm:flex-initial clay-button px-5 py-2.5 rounded-2xl text-xs font-bold text-[#8A796E] dark:text-[#D4C7BC]"
             >
               Batal
             </button>
             <button
               id="save-tx-submit-btn"
               type="submit"
-              className={`px-6 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-lg transition active:scale-95 cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-6 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-lg transition active:scale-95 cursor-pointer text-center ${
                 type === 'expense'
                   ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30'
                   : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
