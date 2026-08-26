@@ -14,7 +14,9 @@ import {
   Award,
   Smartphone,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  Headphones,
+  Music
 } from 'lucide-react';
 import { VoiceSettings } from '../../types';
 import { TaskPanLogo } from '../Common/TaskPanLogo';
@@ -30,6 +32,8 @@ interface ClaySidebarProps {
   openVoiceModal: () => void;
   darkMode: boolean;
   onStartFocusBrief?: () => void;
+  openFocusModal?: () => void;
+  isFocusActive?: boolean;
   openInstallModal?: () => void;
   onLockApp?: () => void;
   openSecurityPinModal?: () => void;
@@ -45,6 +49,8 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
   openVoiceModal,
   darkMode,
   onStartFocusBrief,
+  openFocusModal,
+  isFocusActive,
   openInstallModal,
   onLockApp,
   openSecurityPinModal,
@@ -133,6 +139,32 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
               </button>
             );
           })}
+
+          {/* Quick Trigger for Focus Session & Music Hub */}
+          {openFocusModal && (
+            <button
+              id="sidebar-focus-modal-btn"
+              onClick={openFocusModal}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                isFocusActive
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
+                  : darkMode
+                  ? 'text-orange-400 hover:text-white hover:bg-orange-500/10'
+                  : 'text-orange-800 hover:text-orange-950 hover:bg-orange-100/60'
+              }`}
+            >
+              <div className="flex items-center space-x-3 truncate">
+                <Headphones className={`w-4 h-4 ${isFocusActive ? 'animate-pulse text-white' : 'text-orange-500'}`} />
+                <span className="truncate">Sesi Fokus & Musik</span>
+              </div>
+              {isFocusActive && (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Quick Trigger for Voice Assistant */}
           <button
@@ -239,11 +271,17 @@ export const ClaySidebar: React.FC<ClaySidebarProps> = ({
         </p>
 
         <button
-          onClick={onStartFocusBrief}
+          onClick={() => {
+            if (openFocusModal) {
+              openFocusModal();
+            } else if (onStartFocusBrief) {
+              onStartFocusBrief();
+            }
+          }}
           className="w-full py-2 px-3 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-[11px] shadow-md transition active:scale-95 flex items-center justify-center space-x-1.5"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Mulai Sesi Fokus</span>
+          <span>{isFocusActive ? 'Buka Ruang Fokus' : 'Mulai Sesi Fokus'}</span>
         </button>
       </div>
 

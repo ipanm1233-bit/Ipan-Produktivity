@@ -1,6 +1,6 @@
 {
   "name": "Productivity & Finance Tracker",
-  "description": "Aplikasi produktivitas dan keuangan pribadi 3D Claymorphism dengan kunci PIN keamanan, pengingat suara cerdas, input tugas instan suara, notifikasi HP, kalender, dan sinkronisasi lintas perangkat real-time.",
+  "description": "Aplikasi produktivitas dan manajemen keuangan 3D Claymorphism dengan pemisahan anggaran rutin vs sehari-hari, pengingat tagihan berulang (kos, listrik, wifi, bpjs), kunci PIN keamanan, pengingat suara cerdas, input instan suara, notifikasi kalender, dan sinkronisasi Firestore real-time.",
   "requestFramePermissions": [
     "microphone"
   ],

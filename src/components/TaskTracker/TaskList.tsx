@@ -20,7 +20,8 @@ import {
   Sparkles,
   Zap,
   Target,
-  ArrowUpRight
+  ArrowUpRight,
+  Headphones
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Task, TaskCategory, PriorityLevel, VoiceSettings } from '../../types';
@@ -33,6 +34,7 @@ interface TaskListProps {
   onDeleteTask: (id: string) => void;
   onEditTask: (task: Task) => void;
   onOpenNewTaskModal: () => void;
+  onStartFocusTask?: (taskId: string) => void;
   categories: TaskCategory[];
   voiceSettings: VoiceSettings;
   darkMode: boolean;
@@ -44,6 +46,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   onDeleteTask,
   onEditTask,
   onOpenNewTaskModal,
+  onStartFocusTask,
   categories,
   voiceSettings,
   darkMode,
@@ -579,6 +582,18 @@ export const TaskList: React.FC<TaskListProps> = ({
                   {/* Right Actions Menu with 3D Clay Buttons */}
                   <div className="flex items-center justify-end space-x-1.5 flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E8DACB] dark:border-white/5 w-full sm:w-auto">
                     
+                    {/* Focus Session Direct Button */}
+                    {!task.completed && onStartFocusTask && (
+                      <button
+                        type="button"
+                        onClick={() => onStartFocusTask(task.id)}
+                        title="Mulai Sesi Fokus & Musik untuk Tugas Ini"
+                        className="clay-button p-2 rounded-xl text-orange-600 dark:text-orange-400 hover:bg-orange-500/10"
+                      >
+                        <Headphones className="w-4 h-4" />
+                      </button>
+                    )}
+
                     {/* Voice Reminder Audio Speaker Button */}
                     <button
                       type="button"

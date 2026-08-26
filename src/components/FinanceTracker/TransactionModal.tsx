@@ -8,9 +8,13 @@ import {
   FileText, 
   TrendingDown, 
   TrendingUp,
-  Plus
+  Plus,
+  Layers,
+  Building2,
+  ShoppingBag
 } from 'lucide-react';
-import { Transaction, TransactionType, FinanceCategory } from '../../types';
+import { Transaction, TransactionType, ExpenseGroup, FinanceCategory } from '../../types';
+import { getCategoryExpenseGroup } from '../../utils/budgetCalculator';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -36,6 +40,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState<number | ''>('');
   const [type, setType] = useState<TransactionType>('expense');
+  const [expenseGroup, setExpenseGroup] = useState<ExpenseGroup>('daily');
   const [category, setCategory] = useState('');
   const [date, setDate] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'ewallet' | 'credit_card'>('transfer');
@@ -44,6 +49,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [isAddingNewCat, setIsAddingNewCat] = useState(false);
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState('#f97316');
+  const [newCatGroup, setNewCatGroup] = useState<ExpenseGroup>('daily');
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -52,6 +58,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setAmount(txToEdit.amount);
       setType(txToEdit.type);
       setCategory(txToEdit.category);
+      setExpenseGroup(txToEdit.expenseGroup || 'daily');
       setDate(txToEdit.date || today);
       setPaymentMethod(txToEdit.paymentMethod || 'transfer');
       setNotes(txToEdit.notes || '');
@@ -59,8 +66,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setTitle('');
       setAmount('');
       setType('expense');
-      const firstExpenseCat = categories.find((c) => c.type === 'expense')?.id || 'food';
-      setCategory(firstExpenseCat);
+      const firstExpenseCat = categories.find((c) => c.type === 'expense');
+      const firstCatId = firstExpenseCat?.id || 'food';
+      setCategory(firstCatId);
+      setExpenseGroup(firstExpenseCat ? getCategoryExpenseGroup(firstExpenseCat) : 'daily');
       setDate(initialDate || today);
       setPaymentMethod('ewallet');
       setNotes('');
@@ -73,8 +82,21 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
-    const firstCat = categories.find((c) => c.type === newType)?.id;
-    if (firstCat) setCategory(firstCat);
+    const firstCat = categories.find((c) => c.type === newType);
+    if (firstCat) {
+      setCategory(firstCat.id);
+      if (newType === 'expense') {
+        setExpenseGroup(getCategoryExpenseGroup(firstCat));
+      }
+    }
+  };
+
+  const handleCategoryChange = (catId: string) => {
+    setCategory(catId);
+    const cat = categories.find((c) => c.id === catId);
+    if (cat && type === 'expense') {
+      setExpenseGroup(getCategoryExpenseGroup(cat));
+    }
   };
 
   const handleCreateCategory = () => {
@@ -84,10 +106,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       id: catId,
       name: newCatName.trim(),
       type,
+      expenseGroup: type === 'expense' ? newCatGroup : undefined,
       color: newCatColor,
     };
     onAddCategory(newCat);
     setCategory(catId);
+    if (type === 'expense') {
+      setExpenseGroup(newCatGroup);
+    }
     setNewCatName('');
     setIsAddingNewCat(false);
   };
@@ -96,15 +122,20 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     e.preventDefault();
     if (!title.trim() || !amount || Number(amount) <= 0) return;
 
+    const chosenCat = categories.find((c) => c.id === category);
+    const finalGroup = type === 'expense' ? (expenseGroup || getCategoryExpenseGroup(chosenCat)) : undefined;
+
     const txData: Transaction = {
       id: txToEdit ? txToEdit.id : 'tx-' + Date.now(),
       title: title.trim(),
       amount: Number(amount),
       type,
+      expenseGroup: finalGroup,
       category: category || (type === 'expense' ? 'food' : 'salary'),
       date: date || new Date().toISOString().split('T')[0],
       paymentMethod,
       notes: notes.trim() || undefined,
+      relatedBillId: txToEdit?.relatedBillId,
       createdAt: txToEdit ? txToEdit.createdAt : new Date().toISOString(),
     };
 
@@ -131,7 +162,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 {txToEdit ? 'Ubah Transaksi' : 'Catat Transaksi Keuangan'}
               </h2>
               <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium line-clamp-1">
-                Catat pengeluaran atau pemasukan untuk pantau anggaran
+                Pisahkan pos rutin (kos/tagihan) dan pos fleksibel harian
               </p>
             </div>
           </div>
@@ -176,6 +207,50 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </button>
           </div>
 
+          {/* Expense Group Segment (Routine vs Daily) */}
+          {type === 'expense' && (
+            <div className="p-3 rounded-2xl bg-orange-50/70 dark:bg-neutral-900/60 border border-orange-200/60 dark:border-white/10 space-y-1.5">
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5" />
+                Alokasi Pos Anggaran
+              </label>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setExpenseGroup('routine')}
+                  className={`p-2.5 rounded-xl text-left border transition-all flex items-start gap-2 ${
+                    expenseGroup === 'routine'
+                      ? 'border-purple-500 bg-purple-500/15 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 shadow-sm ring-1 ring-purple-500'
+                      : 'border-transparent bg-white/60 dark:bg-neutral-800/60 text-gray-600 dark:text-gray-400 hover:bg-white'
+                  }`}
+                >
+                  <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold leading-tight">Pos Rutin & Tagihan</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Kos, PLN, WiFi, BPJS</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setExpenseGroup('daily')}
+                  className={`p-2.5 rounded-xl text-left border transition-all flex items-start gap-2 ${
+                    expenseGroup === 'daily'
+                      ? 'border-orange-500 bg-orange-500/15 dark:bg-orange-950/40 text-orange-900 dark:text-orange-200 shadow-sm ring-1 ring-orange-500'
+                      : 'border-transparent bg-white/60 dark:bg-neutral-800/60 text-gray-600 dark:text-gray-400 hover:bg-white'
+                  }`}
+                >
+                  <ShoppingBag className="w-4 h-4 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold leading-tight">Pos Sehari-hari</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400">Makan, Belanja, Kafe</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Amount / Nominal */}
           <div>
             <label className="block text-xs font-extrabold uppercase tracking-wider mb-2 text-[#8A796E] dark:text-[#BDB0A4]">
@@ -212,7 +287,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               id="tx-title-input"
               type="text"
               required
-              placeholder="Contoh: Makan Siang Resto, Tagihan Internet Fiber"
+              placeholder="Contoh: Sewa Kos Bulanan, Makan Siang Resto, Token PLN"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-3 clay-input text-sm font-bold text-[#3E2F26] dark:text-[#FAF4EE] placeholder-[#A8988D] focus:outline-none transition"
@@ -239,38 +314,53 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               {isAddingNewCat ? (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Nama Kategori..."
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    className="flex-1 px-3 py-2 text-xs clay-input font-bold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none"
-                  />
-                  <input
-                    type="color"
-                    value={newCatColor}
-                    onChange={(e) => setNewCatColor(e.target.value)}
-                    className="w-9 h-9 rounded-xl cursor-pointer border-0 bg-transparent"
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      placeholder="Nama Kategori..."
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      className="flex-1 px-3 py-2 text-xs clay-input font-bold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none"
+                    />
+                    <input
+                      type="color"
+                      value={newCatColor}
+                      onChange={(e) => setNewCatColor(e.target.value)}
+                      className="w-9 h-9 rounded-xl cursor-pointer border-0 bg-transparent"
+                    />
+                  </div>
+                  {type === 'expense' && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-gray-500">Tipe Pos:</span>
+                      <select
+                        value={newCatGroup}
+                        onChange={(e) => setNewCatGroup(e.target.value as ExpenseGroup)}
+                        className="clay-input px-2 py-1 text-xs font-bold"
+                      >
+                        <option value="routine">Pos Rutin (Tagihan/Kos)</option>
+                        <option value="daily">Pos Sehari-hari</option>
+                      </select>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={handleCreateCategory}
-                    className="clay-button-primary px-3 py-2 rounded-xl text-xs font-bold"
+                    className="clay-button-primary w-full py-1.5 rounded-xl text-xs font-bold"
                   >
-                    Simpan
+                    Simpan Kategori Baru
                   </button>
                 </div>
               ) : (
                 <select
                   id="tx-category-select"
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full px-3.5 py-2.5 clay-button rounded-2xl text-sm font-bold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none cursor-pointer"
                 >
                   {relevantCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}
+                      {c.name} {c.expenseGroup ? `(${c.expenseGroup === 'routine' ? 'Rutin' : 'Harian'})` : ''}
                     </option>
                   ))}
                 </select>
@@ -289,8 +379,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 onChange={(e) => setPaymentMethod(e.target.value as any)}
                 className="w-full px-3.5 py-2.5 clay-button rounded-2xl text-sm font-bold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none cursor-pointer"
               >
-                <option value="ewallet">E-Wallet (GoPay, OVO, Dana)</option>
                 <option value="transfer">Transfer Bank (BCA, Mandiri, BRI)</option>
+                <option value="ewallet">E-Wallet (GoPay, OVO, Dana, ShopeePay)</option>
                 <option value="cash">Tunai (Cash)</option>
                 <option value="credit_card">Kartu Kredit / PayLater</option>
               </select>
@@ -357,3 +447,4 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     </div>
   );
 };
+

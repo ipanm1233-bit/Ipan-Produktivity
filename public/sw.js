@@ -154,15 +154,57 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Listen for message from main thread (for direct SW notification triggering)
+// In-memory alarms store inside Service Worker
+let scheduledAlarms = [];
+
+function checkPendingAlarms() {
+  const now = Date.now();
+  const dueAlarms = scheduledAlarms.filter((a) => a.time <= now && !a.executed);
+  
+  dueAlarms.forEach((alarm) => {
+    alarm.executed = true;
+    self.registration.showNotification(alarm.title || 'Pengingat TaskPan', {
+      body: alarm.body || 'Waktunya menyelesaikan jadwal Anda!',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      vibrate: [300, 100, 300, 100, 400],
+      tag: alarm.tag || `alarm-${alarm.id}`,
+      renotify: true,
+      requireInteraction: true,
+      data: { url: '/', id: alarm.id }
+    });
+  });
+
+  // Keep future alarms only
+  scheduledAlarms = scheduledAlarms.filter((a) => !a.executed);
+}
+
+// Background ticker in Service Worker
+setInterval(checkPendingAlarms, 15000);
+
+// Listen for message from main thread (for direct SW notification triggering and alarms)
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+  if (!event.data) return;
+
+  if (event.data.type === 'SHOW_NOTIFICATION') {
     const { title, options } = event.data;
     self.registration.showNotification(title || 'TaskPan', {
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      vibrate: [200, 100, 200],
+      vibrate: [300, 100, 300, 100, 400],
       ...options,
     });
+  } else if (event.data.type === 'SCHEDULE_ALARMS') {
+    const { alarms } = event.data;
+    if (Array.isArray(alarms)) {
+      scheduledAlarms = alarms.map((a) => ({ ...a, executed: false }));
+      checkPendingAlarms();
+    }
+  } else if (event.data.type === 'SCHEDULE_SINGLE_ALARM') {
+    const { alarm } = event.data;
+    if (alarm && alarm.time) {
+      scheduledAlarms.push({ ...alarm, executed: false });
+      checkPendingAlarms();
+    }
   }
 });

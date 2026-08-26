@@ -1,4 +1,11 @@
 import { Task, VoiceSettings } from '../types';
+import { 
+  numberToIndonesianWords, 
+  formatRupiahSpoken, 
+  prepareIndonesianTextForSpeech 
+} from './indonesianTerbilang';
+
+export { numberToIndonesianWords, formatRupiahSpoken, prepareIndonesianTextForSpeech };
 
 let audioCtx: AudioContext | null = null;
 
@@ -203,11 +210,39 @@ export function generateBudgetVoicePrompt(
   settings: VoiceSettings
 ): string {
   const name = settings.userName || 'Ipan';
+  const percentWord = numberToIndonesianWords(Math.round(percentUsed));
 
   if (type === 'exceeded') {
-    return `Perhatian ${name}! Pengeluaran untuk kategori ${categoryName} telah melebihi batas anggaran bulanan, mencapai ${percentUsed.toFixed(0)} persen. Mohon periksa keuangan Anda.`;
+    return `Perhatian ${name}! Pengeluaran untuk kategori ${categoryName} telah melebihi batas anggaran bulanan, mencapai ${percentWord} persen. Mohon periksa keuangan Anda.`;
   } else {
-    return `Peringatan anggaran untuk ${name}. Pengeluaran ${categoryName} sudah mencapai ${percentUsed.toFixed(0)} persen dari batas yang ditetapkan. Harap berhati-hati dalam berbelanja.`;
+    return `Peringatan anggaran untuk ${name}. Pengeluaran ${categoryName} sudah mencapai ${percentWord} persen dari batas yang ditetapkan. Harap berhati-hati dalam berbelanja.`;
+  }
+}
+
+// Generate Voice prompt for recurring bill reminders (Sewa Kos, Listrik, WiFi, BPJS, dll.)
+export function generateBillVoicePrompt(
+  billTitle: string,
+  amount: number,
+  status: 'due_today' | 'due_soon' | 'overdue',
+  daysRemaining: number,
+  settings: VoiceSettings
+): string {
+  const name = settings.userName || 'Ipan';
+  const spokenAmount = formatRupiahSpoken(amount); // Contoh: "seribu rupiah", "lima puluh ribu rupiah", "satu juta dua ratus ribu rupiah"
+
+  switch (status) {
+    case 'due_today':
+      return `Pengingat tagihan untuk ${name}! Tagihan rutin ${billTitle} sebesar ${spokenAmount} jatuh tempo hari ini. Mohon segera lakukan pembayaran agar tidak terlambat.`;
+    case 'overdue': {
+      const daysOverdue = Math.abs(daysRemaining);
+      const daysOverdueWords = numberToIndonesianWords(daysOverdue);
+      return `Peringatan mendesak, ${name}! Tagihan ${billTitle} sebesar ${spokenAmount} telah melewati batas waktu pembayaran ${daysOverdueWords} hari. Harap segera diselesaikan.`;
+    }
+    case 'due_soon':
+    default: {
+      const daysWords = numberToIndonesianWords(daysRemaining);
+      return `Halo ${name}, pengingat tagihan rutin ${billTitle} sebesar ${spokenAmount} akan jatuh tempo dalam ${daysWords} hari ke depan. Pastikan saldo Anda mencukupi ya!`;
+    }
   }
 }
 
@@ -239,11 +274,8 @@ export async function speakText(text: string, settings: VoiceSettings): Promise<
 
   stopSpeaking();
 
-  const cleanText = text
-    .replace(/Rp\s?/g, 'Rupiah ')
-    .replace(/%/g, ' persen ')
-    .replace(/\//g, ' atau ')
-    .trim();
+  // Natural Indonesian text formatting (converting numbers, Rp, %, etc. to spoken words)
+  const cleanText = prepareIndonesianTextForSpeech(text);
 
   if (!cleanText) return;
 

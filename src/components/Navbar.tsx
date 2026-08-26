@@ -14,7 +14,8 @@ import {
   Layers,
   Smartphone,
   ShieldCheck,
-  Lock
+  Lock,
+  Headphones
 } from 'lucide-react';
 import { VoiceSettings } from '../types';
 import { TaskPanLogo } from './Common/TaskPanLogo';
@@ -40,6 +41,8 @@ interface NavbarProps {
   openInstallModal?: () => void;
   onLockApp?: () => void;
   openSecurityPinModal?: () => void;
+  openFocusModal?: () => void;
+  isFocusActive?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -62,6 +65,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   openInstallModal,
   onLockApp,
   openSecurityPinModal,
+  openFocusModal,
+  isFocusActive,
 }) => {
   const getTabTitle = () => {
     switch (activeTab) {
@@ -123,6 +128,28 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {syncRoomId}
               </span>
             </button>
+
+            {/* Focus Mode Trigger (Mobile) */}
+            {openFocusModal && (
+              <button
+                id="mobile-focus-btn"
+                onClick={openFocusModal}
+                title="Sesi Fokus & Musik (Spotify / Apple Music / Lo-Fi)"
+                className={`w-8 h-8 rounded-xl flex items-center justify-center active:scale-95 transition relative ${
+                  isFocusActive
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm'
+                    : 'clay-button text-orange-600 dark:text-orange-400'
+                }`}
+              >
+                <Headphones className={`w-3.5 h-3.5 ${isFocusActive ? 'animate-pulse' : ''}`} />
+                {isFocusActive && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Quick Add Task */}
             <button
@@ -238,6 +265,29 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="clay-button w-9 h-9 rounded-xl text-xs font-bold flex items-center justify-center text-[#5A453A] dark:text-[#C5B7AE] flex-shrink-0 active:scale-95 transition"
             >
               <Lock className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Focus Mode Quick Button (Desktop) */}
+          {openFocusModal && (
+            <button
+              id="desktop-focus-btn"
+              onClick={openFocusModal}
+              title="Sesi Fokus & Musik (Spotify / Apple Music / Suara Alam)"
+              className={`h-9 px-3 rounded-xl text-xs font-extrabold flex items-center space-x-1.5 flex-shrink-0 active:scale-95 transition relative ${
+                isFocusActive
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
+                  : 'clay-button text-orange-600 dark:text-orange-400'
+              }`}
+            >
+              <Headphones className={`w-4 h-4 ${isFocusActive ? 'animate-pulse' : ''}`} />
+              <span className="hidden lg:inline">{isFocusActive ? 'Sesi Berjalan' : 'Mode Fokus'}</span>
+              {isFocusActive && (
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+              )}
             </button>
           )}
 

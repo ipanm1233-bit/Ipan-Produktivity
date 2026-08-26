@@ -1,13 +1,15 @@
 import express, { Request, Response } from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+import { prepareIndonesianTextForSpeech } from "./src/utils/indonesianTerbilang";
 
 interface SyncPayload {
   tasks: any[];
   finances: any[];
+  bills?: any[];
   categories: any[];
   financeCategories: any[];
-  monthlyBudget: number;
+  monthlyBudget: any;
   voiceSettings: any;
   customReminders: any[];
   theme: string;
@@ -184,12 +186,8 @@ app.get("/api/tts", async (req: Request, res: Response) => {
       return;
     }
 
-    // Clean text for natural Indonesian speech
-    const cleanText = rawText
-      .replace(/Rp\s?/g, "Rupiah ")
-      .replace(/%/g, " persen ")
-      .replace(/\//g, " atau ")
-      .replace(/[^\w\s.,!?:-]/gi, "");
+    // Format and clean text for natural Indonesian speech (numbers to words, Rp to terbilang, etc.)
+    const cleanText = prepareIndonesianTextForSpeech(rawText);
 
     // Break text into sentences / chunks under 150 chars for the TTS engine
     const sentenceList = cleanText.match(/[^.!?\n,]+[.!?\n,]?|.+/g) || [cleanText];

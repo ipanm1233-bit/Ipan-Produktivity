@@ -3,6 +3,7 @@ import {
   AppSyncData, 
   Task, 
   Transaction, 
+  RecurringBill,
   TaskCategory, 
   FinanceCategory, 
   MonthlyBudgetConfig, 
@@ -14,14 +15,15 @@ import {
   saveLocalData, 
   pushDataToServer, 
   getSyncRoomId, 
-  setSyncRoomId 
+  setSyncRoomId,
+  DEFAULT_RECURRING_BILLS 
 } from './utils/storage';
 import { 
   saveToFirestore, 
   loadFromFirestore, 
   subscribeToFirestoreRoom 
 } from './utils/firestoreService';
-import { checkDeadlinesAndBudgets } from './utils/notifications';
+import { checkDeadlinesAndBudgets, syncScheduledAlarmsWithServiceWorker } from './utils/notifications';
 import { speakText, playChime, initAudioOnUserGesture } from './utils/audio';
 import { ClaySidebar } from './components/Sidebar/ClaySidebar';
 import { ClayDashboardOverview } from './components/Dashboard/ClayDashboardOverview';
@@ -40,6 +42,9 @@ import { FluidBottomNav } from './components/Navigation/FluidBottomNav';
 import { ClayPinLock } from './components/PinLock/ClayPinLock';
 import { SecurityPinModal } from './components/PinLock/SecurityPinModal';
 import { QuickTaskEntryModal } from './components/Tasks/QuickTaskEntryModal';
+import { FocusSessionModal, FocusSessionState } from './components/FocusMode/FocusSessionModal';
+import { FloatingFocusBar } from './components/FocusMode/FloatingFocusBar';
+import { stopAmbientSound } from './utils/ambientAudio';
 import { 
   Home, 
   CheckSquare, 
@@ -60,6 +65,38 @@ export default function App() {
   // Security PIN Lock Screen State (Enabled when opening app)
   const [isLocked, setIsLocked] = useState<boolean>(() => {
     return localStorage.getItem('taskpan_pin_enabled') !== 'false';
+  });
+
+  // Focus Mode & Ambient/Spotify/Apple Music Session State
+  const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
+  const [focusSessionState, setFocusSessionState] = useState<FocusSessionState>(() => {
+    try {
+      const saved = localStorage.getItem('taskpan_focus_state');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          isPaused: true, // Start paused on page refresh
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved focus state:', e);
+    }
+    return {
+      isActive: false,
+      isPaused: false,
+      durationMinutes: 25,
+      remainingSeconds: 25 * 60,
+      selectedTaskId: null,
+      musicProvider: 'ambient',
+      ambientType: 'binaural',
+      ambientVolume: 0.5,
+      spotifyPlaylistId: '37i9dQZF1DWZeKCadgRdKQ',
+      customSpotifyUrl: '',
+      appleMusicEmbedUrl: 'https://embed.music.apple.com/us/playlist/pure-focus/pl.u-76oNkDvFv59m1X',
+      customAppleMusicUrl: '',
+      completedSessionsCount: 0,
+    };
   });
 
   // Modal visibility states
@@ -142,6 +179,7 @@ export default function App() {
           ...prev,
           tasks: cloudData.tasks || prev.tasks,
           transactions: cloudData.transactions || prev.transactions,
+          bills: Array.isArray(cloudData.bills) ? cloudData.bills : (prev.bills || DEFAULT_RECURRING_BILLS),
           taskCategories: cloudData.taskCategories || prev.taskCategories,
           financeCategories: cloudData.financeCategories || prev.financeCategories,
           monthlyBudget: cloudData.monthlyBudget || prev.monthlyBudget,
@@ -162,6 +200,7 @@ export default function App() {
           ...prev,
           tasks: cloudData.tasks || prev.tasks,
           transactions: cloudData.transactions || prev.transactions,
+          bills: Array.isArray(cloudData.bills) ? cloudData.bills : (prev.bills || DEFAULT_RECURRING_BILLS),
           taskCategories: cloudData.taskCategories || prev.taskCategories,
           financeCategories: cloudData.financeCategories || prev.financeCategories,
           monthlyBudget: cloudData.monthlyBudget || prev.monthlyBudget,
@@ -199,6 +238,7 @@ export default function App() {
                 ...prev,
                 tasks: p.tasks || prev.tasks,
                 transactions: p.finances || p.transactions || prev.transactions,
+                bills: Array.isArray(p.bills) ? p.bills : (prev.bills || DEFAULT_RECURRING_BILLS),
                 taskCategories: p.categories || p.taskCategories || prev.taskCategories,
                 financeCategories: p.financeCategories || prev.financeCategories,
                 monthlyBudget: typeof p.monthlyBudget === 'number' 
@@ -227,7 +267,7 @@ export default function App() {
     };
   }, [appData.syncRoomId]);
 
-  // Background deadline & budget alert watcher (runs every 10 seconds)
+  // Background deadline & budget & recurring bills alert watcher (runs every 10 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       checkDeadlinesAndBudgets(
@@ -254,12 +294,85 @@ export default function App() {
                 : t
             ),
           }));
-        }
+        },
+        appData.bills || []
       );
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [appData.tasks, appData.transactions, appData.monthlyBudget, appData.voiceSettings]);
+  }, [appData.tasks, appData.transactions, appData.monthlyBudget, appData.voiceSettings, appData.bills]);
+
+  // Sync scheduled background alarms with Service Worker (for alerts when browser tab is closed/backgrounded)
+  useEffect(() => {
+    syncScheduledAlarmsWithServiceWorker(appData.tasks, appData.bills || []);
+  }, [appData.tasks, appData.bills]);
+
+  // Focus Session Countdown Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (focusSessionState.isActive && !focusSessionState.isPaused) {
+      interval = setInterval(() => {
+        setFocusSessionState((prev) => {
+          if (prev.remainingSeconds <= 1) {
+            // Sesi Selesai!
+            stopAmbientSound();
+            playChime('success');
+            const name = appData.voiceSettings.userName || 'Ipan';
+            const activeTask = appData.tasks.find((t) => t.id === prev.selectedTaskId);
+            const taskMsg = activeTask ? ` untuk tugas "${activeTask.title}"` : '';
+
+            if (appData.voiceSettings.enabled) {
+              speakText(
+                `Selamat ${name}! Sesi fokus ${prev.durationMinutes} menit${taskMsg} telah selesai. Luar biasa! Waktunya istirahat sejenak.`,
+                appData.voiceSettings
+              );
+            }
+
+            // Tambahkan notifikasi pencapaian
+            const newNotifItem: NotificationItem = {
+              id: `focus-done-${Date.now()}`,
+              title: '🎉 Sesi Fokus Selesai!',
+              message: `Hebat! Kamu telah menuntaskan sesi fokus ${prev.durationMinutes} menit${taskMsg}.`,
+              type: 'system',
+              timestamp: new Date().toISOString(),
+              read: false,
+            };
+
+            setAppData((appPrev) => ({
+              ...appPrev,
+              notifications: [newNotifItem, ...appPrev.notifications].slice(0, 50),
+            }));
+
+            return {
+              ...prev,
+              isActive: false,
+              isPaused: false,
+              remainingSeconds: prev.durationMinutes * 60,
+              completedSessionsCount: (prev.completedSessionsCount || 0) + 1,
+            };
+          }
+
+          return {
+            ...prev,
+            remainingSeconds: prev.remainingSeconds - 1,
+          };
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [focusSessionState.isActive, focusSessionState.isPaused, appData.voiceSettings, appData.tasks]);
+
+  // Persist Focus Session State to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('taskpan_focus_state', JSON.stringify(focusSessionState));
+    } catch (e) {
+      // ignore
+    }
+  }, [focusSessionState]);
 
   // Task Handlers
   const handleSaveTask = (task: Task) => {
@@ -331,6 +444,68 @@ export default function App() {
     }));
   };
 
+  // Recurring Bill Handlers
+  const handleSaveBill = (bill: RecurringBill) => {
+    setAppData((prev) => {
+      const currentBills = prev.bills || [];
+      const exists = currentBills.some((b) => b.id === bill.id);
+      const updatedBills = exists
+        ? currentBills.map((b) => (b.id === bill.id ? bill : b))
+        : [bill, ...currentBills];
+      return { ...prev, bills: updatedBills, lastUpdated: Date.now() };
+    });
+  };
+
+  const handleDeleteBill = (billId: string) => {
+    setAppData((prev) => ({
+      ...prev,
+      bills: (prev.bills || []).filter((b) => b.id !== billId),
+      lastUpdated: Date.now(),
+    }));
+  };
+
+  const handleToggleBillPaid = (bill: RecurringBill, isPaid: boolean, createTransaction: boolean) => {
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    setAppData((prev) => {
+      const currentBills = prev.bills || [];
+      const updatedBills = currentBills.map((b) => {
+        if (b.id !== bill.id) return b;
+        const currentPaidMonths = b.paidMonths || [];
+        const newPaidMonths = isPaid
+          ? Array.from(new Set([...currentPaidMonths, currentMonthStr]))
+          : currentPaidMonths.filter((m) => m !== currentMonthStr);
+        return { ...b, paidMonths: newPaidMonths };
+      });
+
+      let updatedTransactions = prev.transactions;
+      if (isPaid && createTransaction) {
+        const newTx: Transaction = {
+          id: `tx-bill-${bill.id}-${Date.now()}`,
+          title: `Pembayaran ${bill.title}`,
+          amount: bill.amount,
+          type: 'expense',
+          category: bill.category,
+          expenseGroup: 'routine',
+          date: new Date().toISOString(),
+          paymentMethod: bill.paymentMethod || 'transfer',
+          notes: `Otomatis dicatat dari pengingat tagihan bulanan (${currentMonthStr})`,
+          relatedBillId: bill.id,
+          createdAt: new Date().toISOString(),
+        };
+        updatedTransactions = [newTx, ...prev.transactions];
+      }
+
+      return {
+        ...prev,
+        bills: updatedBills,
+        transactions: updatedTransactions,
+        lastUpdated: Date.now(),
+      };
+    });
+  };
+
   const handleUpdateBudget = (budgetConfig: MonthlyBudgetConfig) => {
     setAppData((prev) => ({
       ...prev,
@@ -388,11 +563,33 @@ export default function App() {
     }));
   };
 
-  const handleStartFocusBrief = async () => {
-    playChime('success');
-    const name = appData.voiceSettings.userName || 'Ipan';
-    const pendingCount = appData.tasks.filter(t => !t.completed).length;
-    await speakText(`Halo ${name}! Mode fokus diaktifkan. Ayo selesaikan ${pendingCount} tugas prioritasmu dengan tenang dan penuh konsentrasi!`, appData.voiceSettings);
+  const handleOpenFocusModal = (taskId?: string) => {
+    initAudioOnUserGesture();
+    if (taskId) {
+      setFocusSessionState((prev) => ({
+        ...prev,
+        selectedTaskId: taskId,
+      }));
+    }
+    setIsFocusModalOpen(true);
+  };
+
+  const handleStopFocusSession = () => {
+    stopAmbientSound();
+    setFocusSessionState((prev) => ({
+      ...prev,
+      isActive: false,
+      isPaused: false,
+      remainingSeconds: prev.durationMinutes * 60,
+    }));
+  };
+
+  const handleStartFocusTask = (taskId: string) => {
+    handleOpenFocusModal(taskId);
+  };
+
+  const handleStartFocusBrief = () => {
+    handleOpenFocusModal();
   };
 
   // Handle Unlock App Screen: Read aloud existing tasks & open Quick Task Entry Popup
@@ -472,6 +669,8 @@ export default function App() {
             onLockApp={() => setIsLocked(true)}
             darkMode={darkMode}
             onStartFocusBrief={handleStartFocusBrief}
+            openFocusModal={() => handleOpenFocusModal()}
+            isFocusActive={focusSessionState.isActive}
           />
         </div>
 
@@ -493,6 +692,8 @@ export default function App() {
             openInstallModal={() => setIsInstallModalOpen(true)}
             openSecurityPinModal={() => setIsSecurityPinModalOpen(true)}
             onLockApp={() => setIsLocked(true)}
+            openFocusModal={() => handleOpenFocusModal()}
+            isFocusActive={focusSessionState.isActive}
             unreadNotifsCount={unreadNotifsCount}
             voiceSettings={appData.voiceSettings}
             setVoiceSettings={(updater) => {
@@ -545,6 +746,8 @@ export default function App() {
                   setIsTxModalOpen(true);
                 }}
                 onNavigateTab={setActiveTab}
+                openFocusModal={() => handleOpenFocusModal()}
+                isFocusActive={focusSessionState.isActive}
                 darkMode={darkMode}
               />
             )}
@@ -562,6 +765,7 @@ export default function App() {
                   setTaskToEdit(null);
                   setIsTaskModalOpen(true);
                 }}
+                onStartFocusTask={handleStartFocusTask}
                 categories={appData.taskCategories}
                 voiceSettings={appData.voiceSettings}
                 darkMode={darkMode}
@@ -605,7 +809,11 @@ export default function App() {
                 transactions={appData.transactions}
                 categories={appData.financeCategories}
                 budgetConfig={appData.monthlyBudget}
+                bills={appData.bills || []}
                 onUpdateBudget={handleUpdateBudget}
+                onSaveBill={handleSaveBill}
+                onDeleteBill={handleDeleteBill}
+                onToggleBillPaid={handleToggleBillPaid}
                 onOpenNewTxModal={() => {
                   setTxToEdit(null);
                   setIsTxModalOpen(true);
@@ -730,6 +938,31 @@ export default function App() {
         userName={appData.voiceSettings.userName || 'Ipan'}
       />
 
+      {/* Floating Focus Mini Player Widget (When minimized / navigating tabs) */}
+      {!isFocusModalOpen && (
+        <FloatingFocusBar
+          sessionState={focusSessionState}
+          setSessionState={setFocusSessionState}
+          onMaximize={() => setIsFocusModalOpen(true)}
+          onStopSession={handleStopFocusSession}
+          tasks={appData.tasks}
+          darkMode={darkMode}
+        />
+      )}
+
+      {/* Focus Mode & Music Hub Room (Spotify, Apple Music, Binaural / Lofi Ambient) */}
+      <FocusSessionModal
+        isOpen={isFocusModalOpen}
+        onClose={() => setIsFocusModalOpen(false)}
+        onMinimize={() => setIsFocusModalOpen(false)}
+        sessionState={focusSessionState}
+        setSessionState={setFocusSessionState}
+        tasks={appData.tasks}
+        voiceSettings={appData.voiceSettings}
+        darkMode={darkMode}
+      />
+
     </div>
   );
 }
+

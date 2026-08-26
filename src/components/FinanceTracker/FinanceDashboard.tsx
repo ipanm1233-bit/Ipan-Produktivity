@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -26,32 +26,44 @@ import {
   RotateCcw,
   Layers,
   Calculator,
-  Check
+  Check,
+  Bell,
+  Clock,
+  ShoppingBag,
+  Wifi,
+  ShieldCheck,
+  Tv,
+  AlertCircle
 } from 'lucide-react';
 import { 
   PieChart, 
   Pie, 
   Cell, 
   ResponsiveContainer, 
-  Tooltip, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis 
+  Tooltip 
 } from 'recharts';
-import { Transaction, FinanceCategory, MonthlyBudgetConfig } from '../../types';
+import { Transaction, FinanceCategory, MonthlyBudgetConfig, RecurringBill, ExpenseGroup } from '../../types';
 import { 
   calculateAutoCategoryBudgets, 
   calculateFromHistoricalSpending, 
+  calculateExpenseGroupBreakdown,
+  getBillDueStatus,
+  getCategoryExpenseGroup,
   BUDGET_PRESETS, 
   BudgetDistributionPreset 
 } from '../../utils/budgetCalculator';
+import { BillReminderModal } from './BillReminderModal';
+import confetti from 'canvas-confetti';
 
 interface FinanceDashboardProps {
   transactions: Transaction[];
   categories: FinanceCategory[];
   budgetConfig: MonthlyBudgetConfig;
+  bills: RecurringBill[];
   onUpdateBudget: (config: MonthlyBudgetConfig) => void;
+  onSaveBill: (bill: RecurringBill) => void;
+  onDeleteBill: (billId: string) => void;
+  onToggleBillPaid: (bill: RecurringBill, isPaid: boolean, createTransaction: boolean) => void;
   onOpenNewTxModal: () => void;
   onEditTx: (tx: Transaction) => void;
   onDeleteTx: (id: string) => void;
@@ -62,7 +74,11 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
   transactions,
   categories,
   budgetConfig,
+  bills,
   onUpdateBudget,
+  onSaveBill,
+  onDeleteBill,
+  onToggleBillPaid,
   onOpenNewTxModal,
   onEditTx,
   onDeleteTx,
@@ -73,9 +89,11 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<'all' | 'expense' | 'income'>('all');
+  const [selectedType, setSelectedType] = useState<'all' | 'routine' | 'daily' | 'income'>('all');
   const [selectedCat, setSelectedCat] = useState<string>('all');
   const [isSettingBudget, setIsSettingBudget] = useState(false);
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
+
   const [tempTotalBudget, setTempTotalBudget] = useState(budgetConfig.totalBudget);
   const [tempThreshold, setTempThreshold] = useState(budgetConfig.alertThresholdPercent || 80);
   const [tempCategoryBudgets, setTempCategoryBudgets] = useState<Record<string, number>>(
@@ -106,9 +124,27 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
   const isOverBudget = totalExpense > budgetConfig.totalBudget && budgetConfig.totalBudget > 0;
   const isWarningBudget = budgetUsagePercent >= (budgetConfig.alertThresholdPercent || 80) && !isOverBudget;
 
+  // Separated Routine vs Daily breakdown
+  const groupBreakdown = calculateExpenseGroupBreakdown(
+    categories,
+    budgetConfig.categoryBudgets || {},
+    transactions,
+    selectedMonth
+  );
+
   // Filtered transactions for table
   const filteredTransactions = monthTransactions.filter((t) => {
-    if (selectedType !== 'all' && t.type !== selectedType) return false;
+    if (selectedType === 'income' && t.type !== 'income') return false;
+    if (selectedType === 'routine') {
+      if (t.type !== 'expense') return false;
+      const grp = t.expenseGroup || getCategoryExpenseGroup(categories.find((c) => c.id === t.category));
+      if (grp !== 'routine') return false;
+    }
+    if (selectedType === 'daily') {
+      if (t.type !== 'expense') return false;
+      const grp = t.expenseGroup || getCategoryExpenseGroup(categories.find((c) => c.id === t.category));
+      if (grp !== 'daily') return false;
+    }
     if (selectedCat !== 'all' && t.category !== selectedCat) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -137,7 +173,6 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
     }
   };
 
-  // When total budget input changes
   const handleTotalBudgetChange = (newTotal: number) => {
     setTempTotalBudget(newTotal);
     if (autoDistributeEnabled) {
@@ -151,7 +186,6 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
     setTempTotalBudget(total);
     setTempThreshold(budgetConfig.alertThresholdPercent || 80);
     
-    // Check if category budgets exist, otherwise auto calculate
     const existing = budgetConfig.categoryBudgets || {};
     const hasExistingBudgets = Object.values(existing).some((v) => Number(v) > 0);
     if (hasExistingBudgets) {
@@ -164,6 +198,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
     }
     setIsSettingBudget(true);
   };
+
   const categoryExpenseData = expenseCategories.map((cat) => {
     const sum = monthTransactions
       .filter((t) => t.type === 'expense' && t.category === cat.id)
@@ -210,6 +245,11 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
     };
   };
 
+  // Urgent and upcoming bills
+  const billStatuses = (bills || []).map((bill) => getBillDueStatus(bill));
+  const unpaidBills = billStatuses.filter((s) => !s.isPaidThisMonth);
+  const urgentBills = unpaidBills.filter((s) => s.status === 'overdue' || s.status === 'due_today' || s.status === 'due_soon');
+
   return (
     <div className="space-y-6">
       
@@ -222,12 +262,12 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400">
-                Pencatatan Keuangan
+                Pencatatan Keuangan & Anggaran Terpisah
               </span>
               <span className="text-[#8A796E]">•</span>
               <span className="text-[10px] text-[#8A796E] dark:text-[#BDB0A4] font-bold">{selectedMonth}</span>
             </div>
-            <h2 className="text-xl font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">Dompet & Anggaran Bulanan</h2>
+            <h2 className="text-xl font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">Dompet & Tagihan Rutin</h2>
           </div>
         </div>
 
@@ -240,6 +280,16 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="px-3.5 py-2.5 clay-input rounded-2xl text-xs font-extrabold text-[#3E2F26] dark:text-[#FAF4EE] focus:outline-none cursor-pointer"
           />
+
+          {/* Manage Recurring Bills Button */}
+          <button
+            id="open-bills-modal-btn"
+            onClick={() => setIsBillModalOpen(true)}
+            className="clay-button p-2.5 sm:px-4 sm:py-2.5 rounded-2xl text-xs font-extrabold flex items-center space-x-1.5 text-purple-700 dark:text-purple-400 border border-purple-300/40"
+          >
+            <Bell className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span>Pengingat Tagihan ({bills.length})</span>
+          </button>
 
           {/* Setting Budget Target Button */}
           <button
@@ -262,6 +312,72 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Urgent Bill Reminder Alert Banner (If Any Bills Due/Overdue) */}
+      {urgentBills.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-purple-500/10 via-rose-500/10 to-amber-500/10 border-2 border-purple-500/30 dark:border-purple-500/20 backdrop-blur-sm shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md animate-pulse">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                  <span>Pengingat Tagihan Mendesak ({urgentBills.length})</span>
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Tagihan rutin yang perlu dibayar bulan ini
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsBillModalOpen(true)}
+              className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline"
+            >
+              Lihat Semua
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {urgentBills.map((s) => (
+              <div
+                key={s.bill.id}
+                className="clay-card-sm p-3.5 flex items-center justify-between gap-3 bg-white/70 dark:bg-neutral-900/70"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-xs text-gray-800 dark:text-white truncate">
+                      {s.bill.title}
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                      s.status === 'overdue'
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                        : s.status === 'due_today'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                    }`}>
+                      {s.statusText}
+                    </span>
+                  </div>
+                  <p className="text-xs font-extrabold text-gray-700 dark:text-gray-200 mt-0.5">
+                    Rp {s.bill.amount.toLocaleString('id-ID')}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    confetti({ particleCount: 30, spread: 40, origin: { y: 0.6 } });
+                    onToggleBillPaid(s.bill, true, true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-sm shrink-0"
+                >
+                  Bayar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Main Financial Bento Grid Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -323,7 +439,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
         {/* Budget Status Meter */}
         <div className="p-5 clay-card transition-transform hover:-translate-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#BDB0A4]">Status Anggaran</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#8A796E] dark:text-[#BDB0A4]">Status Total Anggaran</span>
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-inner ${
               isOverBudget
                 ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30 animate-pulse'
@@ -349,55 +465,171 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
 
       </div>
 
-      {/* Monthly Budget Progress Bento Banner */}
-      <div className={`p-6 rounded-3xl clay-card transition-all ${
-        isOverBudget 
-          ? 'border-2 border-rose-500/40 bg-rose-50/50 dark:bg-rose-950/20' 
-          : isWarningBudget
-          ? 'border-2 border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20'
-          : ''
-      }`}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-          <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
-                Penggunaan Anggaran Bulanan
-              </h3>
-              {isOverBudget && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-600 text-white shadow-sm">
-                  OVER-BUDGET
+      {/* SEPARATED BUDGET CARDS: 1. POS RUTIN (KOS/TAGIHAN) & 2. POS SEHARI-HARI (MAKAN/HIBURAN) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* CARD 1: PENGELUARAN RUTIN & TAGIHAN TETAP */}
+        <div className="p-6 rounded-3xl clay-card border-2 border-purple-500/25 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-200 dark:border-purple-800 shadow-inner shrink-0">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                  Pos Anggaran Wajib
                 </span>
-              )}
-              {isWarningBudget && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-white shadow-sm">
-                  MENDEKATI LIMIT ({budgetConfig.alertThresholdPercent || 80}%)
-                </span>
-              )}
+                <h3 className="text-base font-extrabold text-gray-800 dark:text-white">
+                  Pengeluaran Rutin & Tagihan
+                </h3>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Kos, PLN/Listrik, WiFi, Cicilan, BPJS & Langganan
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-[#8A796E] dark:text-[#BDB0A4] mt-0.5 font-medium">
-              Target Anggaran: Rp {budgetConfig.totalBudget.toLocaleString('id-ID')} • Terpakai: Rp {totalExpense.toLocaleString('id-ID')}
-            </p>
+
+            <button
+              onClick={() => setIsBillModalOpen(true)}
+              className="clay-button px-3 py-1.5 rounded-xl text-xs font-bold text-purple-600 dark:text-purple-400 shrink-0 flex items-center gap-1"
+            >
+              <Bell className="w-3.5 h-3.5" />
+              <span>Jadwal Tagihan</span>
+            </button>
           </div>
-          <div className="text-right">
-            <span className="text-xs font-extrabold text-orange-600 dark:text-orange-400">
-              Sisa Kuota: Rp {remainingBudget.toLocaleString('id-ID')}
-            </span>
+
+          {/* Progress bar */}
+          <div className="space-y-1.5 bg-purple-50/50 dark:bg-purple-950/20 p-3.5 rounded-2xl border border-purple-100 dark:border-purple-900/30">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-gray-600 dark:text-gray-300">
+                Terpakai: Rp {groupBreakdown.routine.spent.toLocaleString('id-ID')}
+              </span>
+              <span className="text-purple-700 dark:text-purple-300">
+                Alokasi: Rp {groupBreakdown.routine.budgetAllocated.toLocaleString('id-ID')} ({groupBreakdown.routine.percentUsed}%)
+              </span>
+            </div>
+
+            <div className="w-full bg-purple-200/50 dark:bg-neutral-800 h-3 rounded-full overflow-hidden shadow-inner p-0.5">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  groupBreakdown.routine.isOverBudget
+                    ? 'bg-rose-600 shadow-[0_2px_8px_rgba(225,29,72,0.4)]'
+                    : 'bg-gradient-to-r from-purple-500 to-indigo-600'
+                }`}
+                style={{ width: `${Math.min(100, groupBreakdown.routine.percentUsed)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-0.5">
+              <span>Sisa Alokasi: Rp {groupBreakdown.routine.remaining.toLocaleString('id-ID')}</span>
+              <span>{groupBreakdown.routine.categories.length} Kategori Rutin</span>
+            </div>
+          </div>
+
+          {/* Sub Categories list for Routine */}
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {groupBreakdown.routine.categories.map(({ category: cat, budget, spent, percentUsed }) => (
+              <div
+                key={cat.id}
+                className="flex items-center justify-between p-2.5 rounded-xl bg-white/60 dark:bg-neutral-900/60 border border-gray-100 dark:border-white/5 text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                  <span className="font-bold text-gray-700 dark:text-gray-300">{cat.name}</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-extrabold text-gray-800 dark:text-white">
+                    Rp {spent.toLocaleString('id-ID')}
+                  </span>
+                  <span className="text-[10px] text-gray-500 ml-1">
+                    / {budget > 0 ? `Rp ${budget.toLocaleString('id-ID')}` : 'Belum diset'}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="w-full bg-[#E5D7CA] dark:bg-[#201C19] h-3.5 rounded-full overflow-hidden p-0.5 shadow-inner border border-white/40 dark:border-white/5">
-          <div
-            className={`h-full rounded-full transition-all duration-700 ${
-              isOverBudget
-                ? 'bg-rose-600 shadow-[0_2px_8px_rgba(225,29,72,0.4)]'
-                : isWarningBudget
-                ? 'bg-amber-500 shadow-[0_2px_8px_rgba(245,158,11,0.4)]'
-                : 'bg-gradient-to-r from-orange-500 to-amber-500 shadow-[0_2px_8px_rgba(249,115,22,0.4)]'
-            }`}
-            style={{ width: `${Math.min(100, budgetUsagePercent)}%` }}
-          />
+        {/* CARD 2: PENGELUARAN FLEKSIBEL SEHARI-HARI */}
+        <div className="p-6 rounded-3xl clay-card border-2 border-orange-500/25 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-200 dark:border-orange-800 shadow-inner shrink-0">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400">
+                  Pos Anggaran Fleksibel
+                </span>
+                <h3 className="text-base font-extrabold text-gray-800 dark:text-white">
+                  Pengeluaran Sehari-hari
+                </h3>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                  Makan & Minum, Bensin, Belanja, Hiburan, Medis
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onOpenNewTxModal}
+              className="clay-button-primary px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Catat Harian</span>
+            </button>
+          </div>
+
+          {/* Progress bar */}
+          <div className="space-y-1.5 bg-orange-50/50 dark:bg-orange-950/20 p-3.5 rounded-2xl border border-orange-100 dark:border-orange-900/30">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="text-gray-600 dark:text-gray-300">
+                Terpakai: Rp {groupBreakdown.daily.spent.toLocaleString('id-ID')}
+              </span>
+              <span className="text-orange-700 dark:text-orange-300">
+                Alokasi: Rp {groupBreakdown.daily.budgetAllocated.toLocaleString('id-ID')} ({groupBreakdown.daily.percentUsed}%)
+              </span>
+            </div>
+
+            <div className="w-full bg-orange-200/50 dark:bg-neutral-800 h-3 rounded-full overflow-hidden shadow-inner p-0.5">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  groupBreakdown.daily.isOverBudget
+                    ? 'bg-rose-600 shadow-[0_2px_8px_rgba(225,29,72,0.4)]'
+                    : 'bg-gradient-to-r from-orange-500 to-amber-500'
+                }`}
+                style={{ width: `${Math.min(100, groupBreakdown.daily.percentUsed)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400 pt-0.5">
+              <span>Sisa Alokasi: Rp {groupBreakdown.daily.remaining.toLocaleString('id-ID')}</span>
+              <span>{groupBreakdown.daily.categories.length} Kategori Harian</span>
+            </div>
+          </div>
+
+          {/* Sub Categories list for Daily */}
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {groupBreakdown.daily.categories.map(({ category: cat, budget, spent, percentUsed }) => (
+              <div
+                key={cat.id}
+                className="flex items-center justify-between p-2.5 rounded-xl bg-white/60 dark:bg-neutral-900/60 border border-gray-100 dark:border-white/5 text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                  <span className="font-bold text-gray-700 dark:text-gray-300">{cat.name}</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-extrabold text-gray-800 dark:text-white">
+                    Rp {spent.toLocaleString('id-ID')}
+                  </span>
+                  <span className="text-[10px] text-gray-500 ml-1">
+                    / {budget > 0 ? `Rp ${budget.toLocaleString('id-ID')}` : 'Belum diset'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+
       </div>
 
       {/* Category Budgets & Breakdown Bento Grid */}
@@ -494,7 +726,9 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                   <div className="flex justify-between text-xs">
                     <div className="flex items-center space-x-2">
                       <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: cat.color }} />
-                      <span className="font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">{cat.name}</span>
+                      <span className="font-extrabold text-[#3E2F26] dark:text-[#FAF4EE]">
+                        {cat.name} {cat.expenseGroup ? `(${cat.expenseGroup === 'routine' ? 'Rutin' : 'Harian'})` : ''}
+                      </span>
                     </div>
                     <div className="text-right">
                       <span className={`font-extrabold ${isOver ? 'text-rose-600' : 'text-[#3E2F26] dark:text-[#FAF4EE]'}`}>
@@ -536,17 +770,22 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             {/* Type selector */}
             <div className="flex p-1 rounded-2xl bg-[#E8DACB] dark:bg-[#1E1A17] text-xs shadow-inner">
-              {(['all', 'expense', 'income'] as const).map((tp) => (
+              {[
+                { id: 'all', label: 'Semua' },
+                { id: 'routine', label: 'Pos Rutin (Kos/Tagihan)' },
+                { id: 'daily', label: 'Pos Harian' },
+                { id: 'income', label: 'Pemasukan' },
+              ].map((tp) => (
                 <button
-                  key={tp}
-                  onClick={() => setSelectedType(tp)}
+                  key={tp.id}
+                  onClick={() => setSelectedType(tp.id as any)}
                   className={`px-3 py-1.5 rounded-xl font-extrabold capitalize transition ${
-                    selectedType === tp
+                    selectedType === tp.id
                       ? 'clay-button-primary shadow-sm text-white'
                       : 'text-[#6B5A4E] dark:text-[#BDB0A4] hover:text-[#3E2F26]'
                   }`}
                 >
-                  {tp === 'all' ? 'Semua' : tp === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
+                  {tp.label}
                 </button>
               ))}
             </div>
@@ -576,6 +815,8 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
           ) : (
             filteredTransactions.map((tx) => {
               const cat = getCategoryInfo(tx.category, tx.type);
+              const txGroup = tx.expenseGroup || (tx.type === 'expense' ? getCategoryExpenseGroup(categories.find((c) => c.id === tx.category)) : null);
+
               return (
                 <div
                   key={tx.id}
@@ -586,9 +827,17 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                     <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center flex-shrink-0 border shadow-inner ${
                       tx.type === 'income'
                         ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                        : txGroup === 'routine'
+                        ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30'
                         : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30'
                     }`}>
-                      {tx.type === 'income' ? <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" /> : <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      {tx.type === 'income' ? (
+                        <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                      ) : txGroup === 'routine' ? (
+                        <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      ) : (
+                        <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -606,6 +855,11 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                         >
                           {cat.name}
                         </span>
+                        {txGroup === 'routine' && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300/40">
+                            Rutin / Tagihan
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-2 text-[10px] sm:text-[11px] text-[#8A796E] dark:text-[#BDB0A4] mt-0.5 font-medium">
                         <span>{new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
@@ -629,6 +883,8 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                       <span className={`text-xs sm:text-sm font-black ${
                         tx.type === 'income'
                           ? 'text-emerald-600 dark:text-emerald-400'
+                          : txGroup === 'routine'
+                          ? 'text-purple-600 dark:text-purple-400'
                           : 'text-rose-600 dark:text-rose-400'
                       }`}>
                         {tx.type === 'income' ? '+' : '-'} Rp {tx.amount.toLocaleString('id-ID')}
@@ -659,6 +915,17 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
         </div>
       </div>
 
+      {/* Bill Reminder Modal */}
+      <BillReminderModal
+        isOpen={isBillModalOpen}
+        onClose={() => setIsBillModalOpen(false)}
+        bills={bills}
+        categories={categories}
+        onSaveBill={onSaveBill}
+        onDeleteBill={onDeleteBill}
+        onTogglePaidStatus={onToggleBillPaid}
+      />
+
       {/* Modal: Set Monthly Budget with Auto-Calculation & Distribution */}
       {isSettingBudget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-md overflow-y-auto">
@@ -675,7 +942,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                     Pengaturan Anggaran & Pembagian Otomatis
                   </h3>
                   <p className="text-[11px] sm:text-xs text-[#8A796E] dark:text-[#BDB0A4] font-medium">
-                    Masukkan total anggaran; sistem akan otomatis membagi dan menghitung besaran dana tiap pos pengeluaran.
+                    Sistem otomatis mengalokasikan pos rutin (kos/tagihan) dan pos fleksibel harian secara proporsional.
                   </p>
                 </div>
               </div>
@@ -890,6 +1157,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                   {expenseCategories.map((c) => {
                     const currentAmt = tempCategoryBudgets[c.id] || 0;
                     const catPercent = tempTotalBudget > 0 ? (currentAmt / tempTotalBudget) * 100 : 0;
+                    const grp = getCategoryExpenseGroup(c);
 
                     return (
                       <div
@@ -902,9 +1170,14 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
                               className="w-3.5 h-3.5 rounded-full flex-shrink-0 shadow-sm"
                               style={{ backgroundColor: c.color }}
                             />
-                            <span className="font-black text-xs text-[#3E2F26] dark:text-[#FAF4EE] truncate">
-                              {c.name}
-                            </span>
+                            <div className="truncate">
+                              <span className="font-black text-xs text-[#3E2F26] dark:text-[#FAF4EE] block truncate">
+                                {c.name}
+                              </span>
+                              <span className="text-[9px] text-gray-500 uppercase font-bold">
+                                {grp === 'routine' ? 'Pos Rutin / Tagihan' : 'Pos Sehari-hari'}
+                              </span>
+                            </div>
                           </div>
 
                           <div className="flex items-center space-x-2 flex-shrink-0">
@@ -1025,5 +1298,6 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({
     </div>
   );
 };
+
 
 

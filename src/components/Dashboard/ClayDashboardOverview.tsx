@@ -33,7 +33,8 @@ import {
   Upload,
   Camera,
   RotateCw,
-  Film
+  Film,
+  Headphones
 } from 'lucide-react';
 import { speakText, playChime, stopSpeaking } from '../../utils/audio';
 import clayAvatarBg from '../../assets/images/clay_avatar_bg_1787581636772.jpg';
@@ -54,6 +55,8 @@ interface ClayDashboardOverviewProps {
   onOpenNewTaskModal: () => void;
   onOpenNewTxModal: () => void;
   onNavigateTab: (tab: 'dashboard' | 'tasks' | 'calendar' | 'finance' | 'analytics') => void;
+  openFocusModal?: () => void;
+  isFocusActive?: boolean;
   darkMode: boolean;
 }
 
@@ -70,6 +73,8 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
   onOpenNewTaskModal,
   onOpenNewTxModal,
   onNavigateTab,
+  openFocusModal,
+  isFocusActive,
   darkMode,
 }) => {
   const [isPlayingBrief, setIsPlayingBrief] = useState(false);
@@ -395,6 +400,20 @@ export const ClayDashboardOverview: React.FC<ClayDashboardOverviewProps> = ({
                 <Plus className="w-4 h-4" />
                 <span>Tambah Tugas Baru</span>
               </button>
+
+              {openFocusModal && (
+                <button
+                  onClick={openFocusModal}
+                  className={`px-5 py-2.5 sm:py-3 rounded-full text-xs font-black flex items-center space-x-2 shadow-md transition active:scale-95 ${
+                    isFocusActive
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white animate-pulse'
+                      : 'bg-white dark:bg-neutral-800 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-neutral-700 hover:bg-orange-50 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  <Headphones className="w-4 h-4 text-orange-500" />
+                  <span>{isFocusActive ? 'Ruang Fokus Berjalan' : 'Sesi Fokus & Musik'}</span>
+                </button>
+              )}
             </div>
           </div>
 

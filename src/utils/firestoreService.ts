@@ -43,6 +43,7 @@ export async function saveToFirestore(roomId: string, data: AppSyncData): Promis
       roomId,
       tasks: data.tasks || [],
       transactions: data.transactions || [],
+      bills: data.bills || [],
       taskCategories: data.taskCategories || [],
       financeCategories: data.financeCategories || [],
       monthlyBudget: data.monthlyBudget || { totalBudget: 0, categoryBudgets: {}, alertThresholdPercent: 80 },

@@ -34,13 +34,16 @@ export interface Task {
 }
 
 export type TransactionType = 'expense' | 'income';
+export type ExpenseGroup = 'routine' | 'daily'; // 'routine' (Tagihan, Kos, Cicilan, Langganan) vs 'daily' (Makan, Hiburan, Belanja, Transport)
 
 export interface FinanceCategory {
   id: string;
   name: string;
   type: TransactionType;
+  expenseGroup?: ExpenseGroup; // Separates fixed/routine vs daily/lifestyle expenses
   color: string;
   budgetLimit?: number; // Optional monthly category budget limit
+  icon?: string;
 }
 
 export interface Transaction {
@@ -48,10 +51,27 @@ export interface Transaction {
   title: string;
   amount: number;
   type: TransactionType;
+  expenseGroup?: ExpenseGroup; // Separates routine vs daily
   category: string; // category id or name
   date: string; // YYYY-MM-DD
   paymentMethod: 'cash' | 'transfer' | 'ewallet' | 'credit_card';
   notes?: string;
+  relatedBillId?: string; // If paid from a recurring bill reminder
+  createdAt: string;
+}
+
+export interface RecurringBill {
+  id: string;
+  title: string; // e.g. "Sewa Kos Bulanan", "Tagihan Listrik PLN", "WiFi Fiber", "BPJS Kesehatan"
+  amount: number;
+  dueDateDay: number; // 1 - 31 (day of the month)
+  category: string; // categoryId e.g. 'kos', 'bills', 'internet'
+  expenseGroup: 'routine';
+  reminderDaysBefore: number; // e.g. 3 (H-3), 1 (H-1), 0 (Hari H)
+  notes?: string;
+  paymentMethod?: 'cash' | 'transfer' | 'ewallet' | 'credit_card';
+  paidMonths?: string[]; // Array of "YYYY-MM" when this bill was paid
+  autoCreateTransaction?: boolean;
   createdAt: string;
 }
 
@@ -62,6 +82,8 @@ export interface CategoryBudget {
 
 export interface MonthlyBudgetConfig {
   totalBudget: number; // Overall monthly spending target
+  routineBudget?: number; // Anggaran Rutin (Tagihan, Kos, Cicilan, Langganan)
+  dailyBudget?: number; // Anggaran Sehari-hari (Makan, Hiburan, Belanja, Transportasi)
   categoryBudgets: Record<string, number>; // categoryId -> limit amount
   alertThresholdPercent: number; // default 80
 }
@@ -92,6 +114,7 @@ export interface VoiceSettings {
   customTemplate?: string;
   financeAlertsEnabled: boolean;
   taskAlertsEnabled: boolean;
+  billAlertsEnabled?: boolean;
   characterAvatar?: CharacterAvatarConfig;
 }
 
@@ -99,15 +122,17 @@ export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: 'task_deadline' | 'budget_warning' | 'budget_exceeded' | 'streak_achievement' | 'sync_update';
+  type: 'task_deadline' | 'budget_warning' | 'budget_exceeded' | 'bill_reminder' | 'bill_overdue' | 'streak_achievement' | 'sync_update' | 'focus_completed' | 'system';
   timestamp: string;
   read: boolean;
   actionUrl?: string;
+  relatedId?: string;
 }
 
 export interface AppSyncData {
   tasks: Task[];
   transactions: Transaction[];
+  bills: RecurringBill[];
   taskCategories: TaskCategory[];
   financeCategories: FinanceCategory[];
   monthlyBudget: MonthlyBudgetConfig;
