@@ -44,6 +44,8 @@ import { SecurityPinModal } from './components/PinLock/SecurityPinModal';
 import { QuickTaskEntryModal } from './components/Tasks/QuickTaskEntryModal';
 import { FocusSessionModal, FocusSessionState } from './components/FocusMode/FocusSessionModal';
 import { FloatingFocusBar } from './components/FocusMode/FloatingFocusBar';
+import { TabletLandscapePrompt } from './components/Common/TabletLandscapePrompt';
+import { useTabletOrientation } from './hooks/useTabletOrientation';
 import { stopAmbientSound } from './utils/ambientAudio';
 import { 
   Home, 
@@ -57,6 +59,7 @@ export default function App() {
   const [appData, setAppData] = useState<AppSyncData>(loadInitialData);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'calendar' | 'finance' | 'analytics'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const tabletOrientation = useTabletOrientation();
   
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('productivity_theme') === 'dark';
@@ -712,6 +715,10 @@ export default function App() {
             }}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            isTablet={tabletOrientation.isTablet}
+            isTabletPortrait={tabletOrientation.isTabletPortrait}
+            isTabletLandscape={tabletOrientation.isTabletLandscape}
+            onRequestLandscape={tabletOrientation.requestLandscape}
           />
 
           {/* Active Content Tab */}
@@ -959,6 +966,12 @@ export default function App() {
         setSessionState={setFocusSessionState}
         tasks={appData.tasks}
         voiceSettings={appData.voiceSettings}
+        darkMode={darkMode}
+      />
+
+      {/* Tablet Orientation Assistant (Ensures Landscape on Tablets) */}
+      <TabletLandscapePrompt
+        orientation={tabletOrientation}
         darkMode={darkMode}
       />
 

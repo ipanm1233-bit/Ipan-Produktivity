@@ -15,7 +15,9 @@ import {
   Smartphone,
   ShieldCheck,
   Lock,
-  Headphones
+  Headphones,
+  Tablet,
+  RotateCw
 } from 'lucide-react';
 import { VoiceSettings } from '../types';
 import { TaskPanLogo } from './Common/TaskPanLogo';
@@ -43,6 +45,10 @@ interface NavbarProps {
   openSecurityPinModal?: () => void;
   openFocusModal?: () => void;
   isFocusActive?: boolean;
+  isTablet?: boolean;
+  isTabletPortrait?: boolean;
+  isTabletLandscape?: boolean;
+  onRequestLandscape?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -67,6 +73,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   openSecurityPinModal,
   openFocusModal,
   isFocusActive,
+  isTablet,
+  isTabletPortrait,
+  isTabletLandscape,
+  onRequestLandscape,
 }) => {
   const getTabTitle = () => {
     switch (activeTab) {
@@ -113,6 +123,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Action buttons (Mobile only: clean compact pill row) */}
           <div className="flex md:hidden items-center space-x-1 flex-shrink-0">
+            {/* Tablet Orientation Rotate Button (Mobile / Tablet Portrait) */}
+            {isTablet && isTabletPortrait && onRequestLandscape && (
+              <button
+                onClick={onRequestLandscape}
+                title="Putar Layar ke Tablet Landscape"
+                className="clay-button px-2 h-8 rounded-xl text-[10px] font-bold flex items-center space-x-1 text-orange-600 dark:text-orange-400 active:scale-95 transition"
+              >
+                <RotateCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '6s' }} />
+                <span className="hidden sm:inline">Landscape</span>
+              </button>
+            )}
+
             {/* Real-Time Sync Status Pill (Mobile) */}
             <button
               id="mobile-sync-room-btn"
@@ -231,6 +253,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
             <Radio className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-orange-500' : 'text-emerald-500'}`} />
           </button>
+
+          {/* Tablet Landscape Mode Active Badge */}
+          {isTablet && isTabletLandscape && (
+            <div 
+              title="Mode Tablet Landscape Aktif"
+              className="hidden md:flex items-center space-x-1.5 px-2.5 h-9 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-xs font-bold flex-shrink-0"
+            >
+              <Tablet className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline text-[11px]">Tablet Landscape</span>
+            </div>
+          )}
 
           {/* Install PWA / Mobile App Button */}
           {openInstallModal && (
